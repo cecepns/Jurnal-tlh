@@ -57,20 +57,20 @@ export function DashboardView() {
         </div>
 
         {/* Global SaaS Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {[
             { title: 'Total Sekolah SaaS', count: `${stats.schools} Sekolah`, icon: Building, color: 'bg-purple-600' },
             { title: 'Total Siswa Terdaftar', count: `${stats.students} Siswa`, icon: GraduationCap, color: 'bg-indigo-600' },
-            { title: 'Total Guru Active', count: `${stats.teachers} Guru`, icon: BookOpen, color: 'bg-emerald-600' },
+            { title: 'Total Guru Aktif', count: `${stats.teachers} Guru`, icon: BookOpen, color: 'bg-emerald-600' },
             { title: 'Pendapatan Subscriptions', count: 'Rp 48.500.000', icon: Award, color: 'bg-amber-500' }
           ].map((stat, idx) => (
-            <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
-              <div className={`w-14 h-14 ${stat.color} text-white rounded-2xl flex items-center justify-center shadow-lg shrink-0`}>
-                <stat.icon className="w-7 h-7" />
+            <div key={idx} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className={`w-12 h-12 ${stat.color} text-white rounded-2xl flex items-center justify-center shadow-md shrink-0`}>
+                <stat.icon className="w-6 h-6" />
               </div>
-              <div>
-                <div className="text-sm text-slate-500 font-semibold">{stat.title}</div>
-                <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">{stat.count}</div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-slate-500 font-bold truncate">{stat.title}</div>
+                <div className="text-lg sm:text-xl font-black text-slate-900 mt-0.5 truncate">{stat.count}</div>
               </div>
             </div>
           ))}
@@ -88,26 +88,26 @@ export function DashboardView() {
         </div>
 
         {/* School Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="text-sm font-bold text-slate-500">Total Siswa</div>
-            <div className="text-3xl font-black text-teal-600 mt-2">38 Siswa</div>
-            <div className="text-sm text-slate-600 mt-1 font-medium">TK A & TK B</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Siswa</div>
+            <div className="text-2xl font-black text-teal-600 mt-1.5">{stats.students || 38} Siswa</div>
+            <div className="text-xs text-slate-600 mt-1 font-medium">TK A & TK B</div>
           </div>
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="text-sm font-bold text-slate-500">Total Guru</div>
-            <div className="text-3xl font-black text-teal-600 mt-2">6 Ustadzah</div>
-            <div className="text-sm text-slate-600 mt-1 font-medium">Wali & Pendamping</div>
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Guru</div>
+            <div className="text-2xl font-black text-teal-600 mt-1.5">{stats.teachers || 6} Ustadzah</div>
+            <div className="text-xs text-slate-600 mt-1 font-medium">Wali & Pendamping</div>
           </div>
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="text-sm font-bold text-slate-500">Total Rombel Kelas</div>
-            <div className="text-3xl font-black text-teal-600 mt-2">2 Kelas</div>
-            <div className="text-sm text-slate-600 mt-1 font-medium">Al Fatih & Ar Razi</div>
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Rombel Kelas</div>
+            <div className="text-2xl font-black text-teal-600 mt-1.5">{stats.classes || 2} Kelas</div>
+            <div className="text-xs text-slate-600 mt-1 font-medium">Al Fatih & Ar Razi</div>
           </div>
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="text-sm font-bold text-slate-500">Laporan Hari Ini</div>
-            <div className="text-3xl font-black text-emerald-600 mt-2">100% Published</div>
-            <div className="text-sm text-slate-600 mt-1 font-medium">Semua kelas terisi</div>
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Laporan Hari Ini</div>
+            <div className="text-2xl font-black text-emerald-600 mt-1.5">100% Published</div>
+            <div className="text-xs text-slate-600 mt-1 font-medium">Semua kelas terisi</div>
           </div>
         </div>
       </div>
@@ -228,13 +228,6 @@ export function DashboardView() {
             <p className="text-sm font-semibold text-teal-100">Wali Kelas: Bu Ani, S.Pd (Ustadzah)</p>
           </div>
         </div>
-
-        <button
-          onClick={() => navigate('/learning')}
-          className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-base rounded-2xl shadow-lg transition flex items-center gap-2"
-        >
-          <Sparkles className="w-5 h-5" /> Buka LMS & Kuis Anak
-        </button>
       </div>
 
       {/* Daily Activity Timeline */}

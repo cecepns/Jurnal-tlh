@@ -113,28 +113,32 @@ export function StudentsView() {
           Tidak ada data siswa yang ditemukan.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {students.map((st) => (
-            <div key={st.id} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5 hover:shadow-xl transition duration-200">
-              <div className="flex items-center gap-4">
-                <SafeImage
-                  src={st.avatar_url}
-                  alt={st.full_name}
-                  isAvatar={true}
-                  fallbackText={st.nickname}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-teal-200 shadow-xs shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-extrabold text-slate-900 text-base truncate">{st.full_name}</h3>
-                  <span className="inline-block mt-1 text-xs font-black text-teal-700 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200/80">
-                    {st.class_name || 'TK A - Al Fatih'}
-                  </span>
+            <div key={st.id} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between space-y-5 hover:shadow-xl hover:border-teal-300 transition-all duration-200">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <SafeImage
+                    src={st.avatar_url}
+                    alt={st.full_name}
+                    isAvatar={true}
+                    fallbackText={st.nickname}
+                    className="w-14 h-14 rounded-2xl object-cover border-2 border-teal-200 shadow-sm shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-extrabold text-slate-900 text-base leading-snug break-words" title={st.full_name}>
+                      {st.full_name}
+                    </h3>
+                    <span className="inline-flex items-center mt-1.5 text-xs font-black text-teal-800 bg-teal-50 px-2.5 py-1 rounded-xl border border-teal-200/80">
+                      {st.class_name || 'TK A - Al Fatih'}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex justify-between items-center text-sm text-slate-600 border-t border-slate-100 pt-4 font-semibold">
-                <span>XP: <strong className="text-amber-600 font-black">{st.xp || 100} XP</strong></span>
-                <span className="font-black text-teal-700 bg-emerald-50 px-2 py-0.5 rounded">Level {st.level || 1}</span>
+                <div className="flex justify-between items-center text-xs text-slate-600 border-t border-slate-100 pt-3.5 font-bold">
+                  <span className="text-slate-500">Total XP: <strong className="text-amber-600 font-black text-sm">{st.xp || 100} XP</strong></span>
+                  <span className="font-black text-teal-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">Level {st.level || 1}</span>
+                </div>
               </div>
 
               <button
@@ -142,9 +146,10 @@ export function StudentsView() {
                   setSelectedStudent(st);
                   setIsModalOpen(true);
                 }}
-                className="w-full py-3 bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-800 text-sm font-extrabold rounded-2xl transition flex items-center justify-center gap-2 shadow-xs"
+                className="w-full py-3 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white border border-teal-200/80 hover:border-teal-600 font-extrabold text-sm rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs group"
               >
-                <Eye className="w-4 h-4" /> Buka Digital Journey
+                <Eye className="w-4 h-4 text-teal-600 group-hover:text-white transition" />
+                <span>Buka Digital Journey</span>
               </button>
             </div>
           ))}

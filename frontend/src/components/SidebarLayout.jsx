@@ -43,9 +43,7 @@ export function SidebarLayout() {
     ],
     parent: [
       { path: '/dashboard', label: 'Timeline Anak Hari Ini', icon: LayoutDashboard },
-      { path: '/portfolio', label: 'Digital Portfolio Anak', icon: GraduationCap },
       { path: '/development', label: 'Laporan Perkembangan', icon: Heart },
-      { path: '/learning', label: 'LMS & Modul Belajar', icon: BookOpen },
       { path: '/messaging', label: 'Pesan & Tanya Ustadzah', icon: MessageSquare },
     ],
     student: [
@@ -128,13 +126,13 @@ export function SidebarLayout() {
                     setMobileOpen(false);
                   }}
                   className={`
-                    w-full flex items-center justify-between text-left px-4 py-3 rounded-2xl text-base font-bold transition-all duration-200
+                    w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-2xl text-sm font-bold transition-all duration-200
                     ${isActive
-                      ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30 font-extrabold'
+                      ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20 font-extrabold'
                       : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'}
                   `}
                 >
-                  <div className="flex items-center gap-3.5 text-left flex-1 min-w-0">
+                  <div className="flex items-center gap-3 text-left flex-1 min-w-0">
                     <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                     <span className="text-left truncate">{item.label}</span>
                   </div>
