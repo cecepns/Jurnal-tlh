@@ -279,14 +279,14 @@ INSERT INTO `schools` (`id`, `name`, `code`, `address`, `phone`, `email`, `subsc
 (1, 'TK The Little Hijabi Islamic School', 'TLH-JAKARTA', 'Jl. Utama Pendidikan No. 8, Jakarta', '0812-3456-7890', 'info@littlehijabi.sch.id', 'pro', 'active');
 
 -- Users (All roles available for testing)
--- Default Password for demo accounts: password123
+-- Default Password for all accounts: password123 (bcrypt hash: $2a$10$Ew.qX8zZgZ88K0y8xL.N/O0U8.K9l6a3E0W/F5G.Q6I.h/r8j5i2e -> plain password123 check supported)
 INSERT INTO `users` (`id`, `school_id`, `name`, `email`, `password`, `phone`, `role`, `avatar_url`) VALUES
-(1, NULL, 'Super Admin Platform', 'superadmin@littlehijabi.id', '$2b$10$YourHashedPasswordHereOrPlainTextForDemo', '0811111111', 'super_admin', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
-(2, 1, 'Ustadzah Sarah (Admin Sekolah)', 'admin@littlehijabi.sch.id', 'password123', '0822222222', 'school_admin', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'),
-(3, 1, 'Bunda Maryam, M.Pd (Kepala Sekolah)', 'kepsek@littlehijabi.sch.id', 'password123', '0833333333', 'principal', 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150'),
-(4, 1, 'Bu Ani (Wali Kelas TK A)', 'guru.ani@littlehijabi.sch.id', 'password123', '0844444444', 'teacher', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'),
-(5, 1, 'Bapak Budi (Orang Tua Aisyah)', 'ortu.budi@gmail.com', 'password123', '0855555555', 'parent', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'),
-(6, 1, 'Ibu Ratna (Orang Tua Ahmad)', 'ortu.ratna@gmail.com', 'password123', '0866666666', 'parent', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150');
+(1, NULL, 'Super Admin Platform', 'superadmin@littlehijabi.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0811111111', 'super_admin', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
+(2, 1, 'Ustadzah Sarah (Admin Sekolah)', 'admin.tk@littlehijabi.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0822222222', 'school_admin', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'),
+(3, 1, 'Bunda Maryam, M.Pd (Kepala Sekolah)', 'kepsek@littlehijabi.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0833333333', 'principal', 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150'),
+(4, 1, 'Bu Ani (Wali Kelas TK A)', 'guru.ani@littlehijabi.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0844444444', 'teacher', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'),
+(5, 1, 'Bapak Budi (Orang Tua Aisyah)', 'ortu.budi@littlehijabi.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0855555555', 'parent', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'),
+(6, 1, 'Aisyah Putri Humaira', 'aisyah@littlehijabi.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0866666666', 'student', 'https://images.unsplash.com/photo-1595454223600-91fbddbbf163?w=150');
 
 -- Academic Year
 INSERT INTO `academic_years` (`id`, `school_id`, `year_name`, `is_active`) VALUES

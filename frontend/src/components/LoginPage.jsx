@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, loginAsRole } = useAuth();
+  const { login, loginWithApi, loginAsRole } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

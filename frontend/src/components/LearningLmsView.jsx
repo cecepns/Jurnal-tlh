@@ -254,43 +254,43 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
       </div>
 
       {/* Tabs Navigation: Modul Bahasa Isyarat vs Kuis & Games */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-4">
           <button
             onClick={() => setActiveTab('learning')}
-            className={`flex items-center gap-2 px-6 py-3 font-black text-base rounded-2xl transition ${
+            className={`flex items-center justify-center gap-2 px-5 py-3 font-black text-sm sm:text-base rounded-2xl transition ${
               activeTab === 'learning'
                 ? 'bg-teal-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-100'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
-            <BookOpen className="w-5 h-5" /> Modul & Video Pembelajaran
+            <BookOpen className="w-5 h-5 shrink-0" /> Modul & Video
           </button>
           <button
             onClick={() => setActiveTab('quizzes')}
-            className={`flex items-center gap-2 px-6 py-3 font-black text-base rounded-2xl transition ${
+            className={`flex items-center justify-center gap-2 px-5 py-3 font-black text-sm sm:text-base rounded-2xl transition ${
               activeTab === 'quizzes'
                 ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-100'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
-            <Award className="w-5 h-5" /> Kuis & Games Interaktif
+            <Award className="w-5 h-5 shrink-0" /> Kuis Interaktif
           </button>
         </div>
 
         {canManage && (
-          <div>
+          <div className="shrink-0">
             {activeTab === 'learning' ? (
               <button
                 onClick={handleOpenAddCourse}
-                className="flex items-center gap-2 px-5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-black rounded-xl shadow-md transition"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-teal-700 hover:bg-teal-800 text-white text-sm font-black rounded-2xl shadow-md transition"
               >
-                <Plus className="w-4 h-4" /> + Tambah Modul Materi Baru
+                <Plus className="w-4 h-4" /> + Tambah Modul Materi
               </button>
             ) : (
               <button
                 onClick={() => setIsQuizModalOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-sm font-black rounded-xl shadow-md transition"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-purple-700 hover:bg-purple-800 text-white text-sm font-black rounded-2xl shadow-md transition"
               >
                 <Plus className="w-4 h-4" /> + Buat Kuis Interaktif
               </button>
@@ -389,71 +389,86 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
               </div>
             </div>
           </div>
-        </div>
-      )}
+          {/* TAB CONTENT 2: KUIS & GAMES INTERAKTIF */}
+          {activeTab === 'quizzes' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900">Kuis & Challenge Isyarat Interaktif</h2>
+                    <p className="text-slate-600 text-sm font-medium mt-1">Uji pemahaman anak dengan kuis menyenangkan bertabur XP bonus</p>
+                  </div>
+                  <span className="px-4 py-2 bg-purple-100 text-purple-800 font-extrabold text-xs rounded-xl border border-purple-200 shrink-0">
+                    🎮 Total Kuis: {quizzesList.length > 0 ? quizzesList.length : 1}
+                  </span>
+                </div>
 
-      {/* TAB CONTENT 2: KUIS & GAMES INTERAKTIF */}
-      {activeTab === 'quizzes' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900">Kuis & Challenge Isyarat Interaktif</h2>
-                <p className="text-slate-600 text-sm font-medium mt-1">Uji pemahaman anak dengan kuis menyenangkan bertabur XP bonus</p>
+                {/* Dynamic Quizzes List */}
+                <div className="space-y-6 max-w-3xl mx-auto">
+                  {(quizzesList.length > 0 ? quizzesList : [
+                    {
+                      id: 1,
+                      question: 'Gerakan mengepalkan tangan dengan ibu jari tegak di samping melambangkan isyarat huruf apa?',
+                      options: [
+                        { id: 'a', text: 'Huruf A' },
+                        { id: 'b', text: 'Huruf B' },
+                        { id: 'c', text: 'Huruf C' }
+                      ],
+                      xp: 50
+                    }
+                  ]).map((q, idx) => (
+                    <div key={q.id || idx} className="p-5 sm:p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-black text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                          <Award className="w-5 h-5 text-purple-600 shrink-0" /> Kuis Soal #{idx + 1} (+{q.xp || 50} XP)
+                        </h3>
+                        <span className="text-xs font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                          Tantangan Harian
+                        </span>
+                      </div>
+
+                      <p className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug">
+                        {q.question}
+                      </p>
+
+                      <form onSubmit={handleQuizSubmit} className="space-y-3">
+                        {(q.options || [
+                          { id: 'a', text: 'Opsi A' },
+                          { id: 'b', text: 'Opsi B' }
+                        ]).map((opt, oIdx) => (
+                          <label
+                            key={opt.id || oIdx}
+                            className={`flex items-center gap-4 p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer text-sm sm:text-base font-bold transition ${
+                              quizAnswer === `${q.id}-${opt.id || opt.text}`
+                                ? 'bg-purple-600 text-white border-purple-600 shadow-md'
+                                : 'bg-white text-slate-800 border-slate-200 hover:bg-purple-50'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name={`quiz-${q.id}`}
+                              value={`${q.id}-${opt.id || opt.text}`}
+                              checked={quizAnswer === `${q.id}-${opt.id || opt.text}`}
+                              onChange={() => setQuizAnswer(`${q.id}-${opt.id || opt.text}`)}
+                              className="hidden"
+                            />
+                            <span>{opt.text}</span>
+                          </label>
+                        ))}
+
+                        <button
+                          type="submit"
+                          className="w-full py-3.5 mt-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-base rounded-2xl shadow-lg shadow-purple-600/30 transition"
+                        >
+                          Jawab & Klaim XP
+                        </button>
+                      </form>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <span className="px-4 py-2 bg-purple-100 text-purple-800 font-extrabold text-xs rounded-xl border border-purple-200">
-                🎮 Games Mode Active
-              </span>
             </div>
-
-            {/* Quiz Box */}
-            <div className="p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-5 max-w-3xl mx-auto">
-              <div className="flex items-center justify-between">
-                <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
-                  <Award className="w-5 h-5 text-purple-600" /> Soal Kuis Isyarat (+50 XP)
-                </h3>
-                <span className="text-sm font-bold text-slate-500">Tantangan Harian</span>
-              </div>
-
-              <p className="text-lg font-extrabold text-slate-800 leading-snug">
-                Gerakan mengepalkan tangan dengan ibu jari tegak di samping melambangkan isyarat huruf apa?
-              </p>
-
-              <form onSubmit={handleQuizSubmit} className="space-y-3">
-                {[
-                  { id: 'a', text: 'Huruf A' },
-                  { id: 'b', text: 'Huruf B' },
-                  { id: 'c', text: 'Huruf C' }
-                ].map((opt) => (
-                  <label
-                    key={opt.id}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer text-base font-bold transition ${
-                      quizAnswer === opt.id
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-md'
-                        : 'bg-white text-slate-800 border-slate-200 hover:bg-purple-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="quiz"
-                      value={opt.id}
-                      checked={quizAnswer === opt.id}
-                      onChange={() => setQuizAnswer(opt.id)}
-                      className="hidden"
-                    />
-                    <span>{opt.text}</span>
-                  </label>
-                ))}
-
-                <button
-                  type="submit"
-                  className="w-full py-3.5 mt-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-base rounded-2xl shadow-lg shadow-purple-600/30 transition"
-                >
-                  Jawab & Klaim XP
-                </button>
-              </form>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
