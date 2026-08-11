@@ -7,11 +7,7 @@ import { Search, Building, Plus, Phone, Mail, CheckCircle2, AlertCircle, Edit, T
 
 export function SchoolsView() {
   const [schools, setSchools] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -20,6 +16,53 @@ export function SchoolsView() {
     email: '',
     subscription_plan: 'Standard Growth'
   });
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    id: null,
+    name: '',
+    code: '',
+    address: '',
+    phone: '',
+    email: '',
+    subscription_plan: 'Standard Growth',
+    status: 'active'
+  });
+
+  const handleOpenEditModal = (sch) => {
+    setSelectedSchool(sch);
+    setEditFormData({
+      id: sch.id,
+      name: sch.name || '',
+      code: sch.code || '',
+      address: sch.address || '',
+      phone: sch.phone || '',
+      email: sch.email || '',
+      subscription_plan: sch.subscription_plan || 'Standard Growth',
+      status: sch.status || 'active'
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateSchool = async (e) => {
+    e.preventDefault();
+    if (!editFormData.name || !editFormData.email) {
+      toast.error('Nama dan Email sekolah wajib diisi!');
+      return;
+    }
+
+    try {
+      const res = await request.put(API_ENDPOINTS.SCHOOLS.UPDATE(editFormData.id), editFormData);
+      if (res.success) {
+        toast.success(`🎉 Data sekolah ${editFormData.name} berhasil diperbarui!`);
+        setSchools(schools.map(s => s.id === editFormData.id ? { ...s, ...editFormData } : s));
+        setIsEditModalOpen(false);
+      }
+    } catch (err) {
+      toast.error('Gagal memperbarui data sekolah');
+    }
+  };
 
   useEffect(() => {
     fetchSchools();
@@ -207,12 +250,20 @@ export function SchoolsView() {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => handleDeleteSchool(sch.id, sch.name)}
-                        className="text-sm text-rose-600 hover:text-rose-800 font-extrabold px-3 py-1.5 rounded-xl hover:bg-rose-50 transition inline-flex items-center gap-1"
-                      >
-                        <Trash2 className="w-4 h-4" /> Hapus
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenEditModal(sch)}
+                          className="text-sm text-purple-600 hover:text-purple-800 font-extrabold px-3 py-1.5 rounded-xl hover:bg-purple-50 transition inline-flex items-center gap-1"
+                        >
+                          <Edit className="w-4 h-4" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSchool(sch.id, sch.name)}
+                          className="text-sm text-rose-600 hover:text-rose-800 font-extrabold px-3 py-1.5 rounded-xl hover:bg-rose-50 transition inline-flex items-center gap-1"
+                        >
+                          <Trash2 className="w-4 h-4" /> Hapus
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -290,6 +341,98 @@ export function SchoolsView() {
               className="px-6 py-2.5 text-sm font-extrabold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-md"
             >
               Simpan Sekolah SaaS
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Edit School */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={`Edit Sekolah SaaS: ${selectedSchool?.name || ''}`}
+      >
+        <form onSubmit={handleUpdateSchool} className="space-y-5">
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Nama Sekolah / Yayasan *</label>
+            <input
+              type="text"
+              required
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-600 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kode Unik Sekolah</label>
+            <input
+              type="text"
+              value={editFormData.code}
+              onChange={(e) => setEditFormData({ ...editFormData, code: e.target.value })}
+              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-600 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Email Resmi Sekolah *</label>
+            <input
+              type="email"
+              required
+              value={editFormData.email}
+              onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-600 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Nomor Telepon Kontak</label>
+            <input
+              type="text"
+              value={editFormData.phone}
+              onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-600 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Paket Langganan SaaS</label>
+            <select
+              value={editFormData.subscription_plan}
+              onChange={(e) => setEditFormData({ ...editFormData, subscription_plan: e.target.value })}
+              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+            >
+              <option value="Starter Basic">Starter Basic (Rp 5.000.000 / thn)</option>
+              <option value="Standard Growth">Standard Growth (Rp 8.500.000 / thn)</option>
+              <option value="Enterprise Pro">Enterprise Pro (Rp 15.000.000 / thn)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Status Langganan</label>
+            <select
+              value={editFormData.status}
+              onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+            >
+              <option value="active">Aktif (Active)</option>
+              <option value="inactive">Non-Aktif (Inactive)</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-5 py-2.5 text-sm font-bold text-slate-600 rounded-xl hover:bg-slate-100"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 text-sm font-extrabold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-md"
+            >
+              Simpan Perubahan
             </button>
           </div>
         </form>

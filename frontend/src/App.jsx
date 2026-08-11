@@ -47,8 +47,8 @@ export default function App() {
               <Route path="/daily-reports" element={<DailyReportsView />} />
               <Route path="/development" element={<DevelopmentReportsView />} />
               <Route path="/ai-generator" element={<AiReportGenerator />} />
-              <Route path="/learning" element={<LearningLmsView />} />
-              <Route path="/quizzes" element={<LearningLmsView />} />
+              <Route path="/learning" element={<LearningLmsView defaultTab="learning" />} />
+              <Route path="/quizzes" element={<LearningLmsView defaultTab="quizzes" />} />
               <Route path="/messaging" element={<MessagingView />} />
             </Route>
           </Route>

@@ -792,18 +792,98 @@ app.get('/api/developments', async (req, res) => {
   res.json({ success: true, data: mockData.developments });
 });
 
-// AI Report Generator Endpoint
-app.post('/api/ai/generate-report', (req, res) => {
+// AI Report Generator Endpoint (Powered by Gemini 2.5 Flash API)
+app.post('/api/ai/generate-report', async (req, res) => {
   const { student_name, teacher_notes } = req.body;
   const promptNotes = teacher_notes || 'Anak aktif dan sangat senang belajar Bahasa Isyarat.';
+  const student = student_name || 'Ananda Siswa';
 
-  const aiNarrative = `${student_name || 'Siswa'} menunjukkan minat yang sangat luar biasa dalam mengikuti pembelajaran hari ini. Berdasarkan catatan perkembangan (${promptNotes}), Ananda mampu merespons instruksi guru dengan sikap santun, menunjukkan keterampilan motorik yang makin matang, serta sangat antusias saat memperagakan gerakan Bahasa Isyarat bersama teman-teman kelasnya.`;
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyClShCaEO06EwEmhxh7-m54rAaRC0uFKBM';
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+  const promptText = `Anda adalah seorang Ustadzah / Guru TK Islam (The Little Hijabi Platform). Buatkan narasi laporan perkembangan siswa yang ramah, hangat, islami, dan deskriptif untuk orang tua berdasarkan informasi berikut:
+
+Nama Siswa: ${student}
+Catatan Aktivitas / Perkembangan: ${promptNotes}
+
+Tolong berikan respons dalam bentuk JSON murni dengan format persis berikut tanpa markdown codeblock atau teks luar lainnya:
+{
+  "narrative": "Isi narasi laporan perkembangan deskriptif lengkap yang hangat dan edukatif...",
+  "suggestions": [
+    "Saran 1 untuk orang tua di rumah...",
+    "Saran 2 untuk orang tua di rumah..."
+  ]
+}`;
+
+  try {
+    const response = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: promptText }
+            ]
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+      let rawText = data.candidates[0].content.parts[0].text.trim();
+      // Remove any markdown codeblock formatting if present
+      if (rawText.startsWith('```json')) {
+        rawText = rawText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (rawText.startsWith('```')) {
+        rawText = rawText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      try {
+        const parsed = JSON.parse(rawText);
+        return res.json({
+          success: true,
+          data: {
+            narrative: parsed.narrative,
+            suggestions: parsed.suggestions || [
+              'Berikan pujian atas keaktifan Ananda di rumah.',
+              'Ajak Ananda mengulang isyarat yang dipelajari sebelum tidur.'
+            ]
+          }
+        });
+      } catch (e) {
+        // If text response is not pure JSON, use text directly as narrative
+        return res.json({
+          success: true,
+          data: {
+            narrative: rawText,
+            suggestions: [
+              'Berikan pujian atas antusiasme Ananda di rumah.',
+              'Ajak Ananda latihan gerakan isyarat sederhana bersama keluarga.'
+            ]
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Gemini API Error:', err.message);
+  }
+
+  // Fallback if API fails or offline
+  const fallbackNarrative = `${student} menunjukkan minat yang luar biasa dalam mengikuti pembelajaran. Berdasarkan catatan perkembangan (${promptNotes}), Ananda mampu merespons instruksi guru dengan sikap santun, menunjukkan keterampilan motorik yang makin matang, serta sangat antusias saat memperagakan gerakan Bahasa Isyarat bersama teman-teman kelasnya.`;
 
   res.json({
     success: true,
     data: {
-      narrative: aiNarrative,
-      suggestions: ['Berikan pujian atas antusiasmenya di rumah.', 'Ajak anak mengulang 3 isyarat abjad sebelum tidur.']
+      narrative: fallbackNarrative,
+      suggestions: [
+        'Berikan pujian atas keaktifan Ananda di rumah.',
+        'Ajak Ananda mengulang 3 isyarat abjad sebelum tidur.'
+      ]
     }
   });
 });
@@ -821,8 +901,98 @@ app.get('/api/courses', async (req, res) => {
   res.json({ success: true, data: mockData.courses });
 });
 
+app.post('/api/courses', async (req, res) => {
+  const course = {
+    id: mockData.courses.length + 1,
+    title: req.body.title,
+    category: req.body.category || 'Bahasa Isyarat',
+    level: req.body.level || 'Level 1',
+    description: req.body.description || '',
+    thumbnail: req.body.thumbnail || 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400',
+    video_url: req.body.video_url || 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    lessonsCount: req.body.lessonsCount || 1,
+    created_at: new Date().toISOString()
+  };
+
+  if (dbConnected) {
+    try {
+      const [result] = await dbPool.query(
+        'INSERT INTO courses (title, category, level, description, thumbnail_url) VALUES (?, ?, ?, ?, ?)',
+        [course.title, course.category, course.level, course.description, course.thumbnail]
+      );
+      return res.json({ success: true, message: 'Modul materi baru berhasil disimpan!', data: { id: result.insertId, ...course } });
+    } catch (err) {
+      console.error('MySQL insert course error:', err.message);
+    }
+  }
+
+  mockData.courses.unshift(course);
+  res.json({ success: true, message: 'Modul materi baru berhasil ditambahkan!', data: course });
+});
+
+app.put('/api/courses/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (dbConnected) {
+    try {
+      const { title, category, level, description, thumbnail, video_url } = req.body;
+      await dbPool.query(
+        'UPDATE courses SET title = COALESCE(?, title), category = COALESCE(?, category), level = COALESCE(?, level), description = COALESCE(?, description), thumbnail_url = COALESCE(?, thumbnail_url) WHERE id = ?',
+        [title, category, level, description, thumbnail, id]
+      );
+    } catch (err) {
+      console.error('MySQL update course error:', err.message);
+    }
+  }
+
+  const idx = mockData.courses.findIndex(c => c.id === id);
+  if (idx !== -1) {
+    mockData.courses[idx] = { ...mockData.courses[idx], ...req.body };
+    res.json({ success: true, message: 'Modul materi berhasil diperbarui!', data: mockData.courses[idx] });
+  } else {
+    res.status(404).json({ success: false, message: 'Modul materi tidak ditemukan' });
+  }
+});
+
+app.delete('/api/courses/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (dbConnected) {
+    try {
+      await dbPool.query('DELETE FROM courses WHERE id = ?', [id]);
+    } catch (err) {
+      console.error('MySQL delete course error:', err.message);
+    }
+  }
+  mockData.courses = mockData.courses.filter(c => c.id !== id);
+  res.json({ success: true, message: 'Modul materi berhasil dihapus!' });
+});
+
+// Quizzes API
 app.get('/api/quizzes', async (req, res) => {
-  res.json({ success: true, data: mockData.quizzes });
+  res.json({ success: true, data: mockData.quizzes || [
+    {
+      id: 1,
+      course_id: 1,
+      question: 'Gerakan mengepalkan tangan dengan ibu jari tegak di samping melambangkan isyarat huruf apa?',
+      options: [
+        { id: 'a', text: 'Huruf A', isCorrect: true },
+        { id: 'b', text: 'Huruf B', isCorrect: false },
+        { id: 'c', text: 'Huruf C', isCorrect: false }
+      ],
+      xp: 50
+    }
+  ] });
+});
+
+app.post('/api/quizzes', async (req, res) => {
+  const quiz = {
+    id: Date.now(),
+    question: req.body.question,
+    options: req.body.options || [],
+    xp: req.body.xp || 50
+  };
+  if (!mockData.quizzes) mockData.quizzes = [];
+  mockData.quizzes.unshift(quiz);
+  res.json({ success: true, message: 'Kuis interaktif baru berhasil dibuat!', data: quiz });
 });
 
 // Messages API

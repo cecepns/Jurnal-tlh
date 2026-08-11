@@ -69,8 +69,8 @@ export function DashboardView() {
                 <stat.icon className="w-6 h-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-slate-500 font-bold truncate">{stat.title}</div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 mt-0.5 truncate">{stat.count}</div>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-extrabold uppercase tracking-tight truncate">{stat.title}</div>
+                <div className="text-base sm:text-lg xl:text-xl font-black text-slate-900 mt-0.5 truncate">{stat.count}</div>
               </div>
             </div>
           ))}

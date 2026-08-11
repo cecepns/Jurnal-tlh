@@ -20,6 +20,7 @@ export function SidebarLayout() {
     super_admin: [
       { path: '/dashboard', label: 'Dashboard Platform', icon: LayoutDashboard },
       { path: '/schools', label: 'Kelola Sekolah SaaS', icon: Building },
+      { path: '/teachers', label: 'Kelola Admin & Guru', icon: Users },
       { path: '/subscriptions', label: 'Paket & Subscription', icon: Award },
     ],
     school_admin: [
@@ -38,6 +39,8 @@ export function SidebarLayout() {
       { path: '/dashboard', label: 'Dashboard Guru', icon: LayoutDashboard },
       { path: '/daily-report', label: '+ Buat Laporan Harian', icon: BookOpen },
       { path: '/ai-generator', label: '✨ AI Report Generator', icon: Sparkles },
+      { path: '/learning', label: 'Modul Bahasa Isyarat', icon: BookOpen },
+      { path: '/quizzes', label: 'Kuis & Games Interaktif', icon: Award },
       { path: '/students', label: 'Daftar Siswa & Portfolio', icon: GraduationCap },
       { path: '/development', label: 'Perkembangan Bulanan', icon: Heart },
     ],

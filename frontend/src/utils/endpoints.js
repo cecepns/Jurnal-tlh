@@ -30,8 +30,14 @@ export const API_ENDPOINTS = {
   },
   LMS: {
     COURSES: "/courses",
+    CREATE_COURSE: "/courses",
+    UPDATE_COURSE: (id) => `/courses/${id}`,
+    DELETE_COURSE: (id) => `/courses/${id}`,
     LESSONS: (courseId) => `/courses/${courseId}/lessons`,
     QUIZZES: "/quizzes",
+    CREATE_QUIZ: "/quizzes",
+    UPDATE_QUIZ: (id) => `/quizzes/${id}`,
+    DELETE_QUIZ: (id) => `/quizzes/${id}`,
   },
   SCHOOLS: {
     LIST: "/schools",
