@@ -7,6 +7,10 @@ import { Search, Building, Plus, Phone, Mail, CheckCircle2, AlertCircle, Edit, T
 
 export function SchoolsView() {
   const [schools, setSchools] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
