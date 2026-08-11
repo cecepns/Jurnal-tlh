@@ -19,15 +19,17 @@ export function DashboardView() {
     teachers: 0,
     classes: 0
   });
+  const [latestReport, setLatestReport] = useState(null);
 
   useEffect(() => {
     const fetchLiveStats = async () => {
       try {
-        const [schoolsRes, studentsRes, teachersRes, classesRes] = await Promise.all([
+        const [schoolsRes, studentsRes, teachersRes, classesRes, reportsRes] = await Promise.all([
           request.get(API_ENDPOINTS.SCHOOLS.LIST).catch(() => ({ data: [] })),
           request.get(API_ENDPOINTS.STUDENTS.LIST).catch(() => ({ data: [] })),
           request.get(API_ENDPOINTS.USERS.LIST, { role: 'teacher' }).catch(() => ({ data: [] })),
-          request.get(API_ENDPOINTS.CLASSES.LIST).catch(() => ({ data: [] }))
+          request.get(API_ENDPOINTS.CLASSES.LIST).catch(() => ({ data: [] })),
+          request.get(API_ENDPOINTS.DAILY_REPORTS.LIST).catch(() => ({ data: [] }))
         ]);
 
         setStats({
@@ -36,6 +38,10 @@ export function DashboardView() {
           teachers: Array.isArray(teachersRes.data) ? teachersRes.data.length : 6,
           classes: Array.isArray(classesRes.data) ? classesRes.data.length : 2
         });
+
+        if (Array.isArray(reportsRes.data) && reportsRes.data.length > 0) {
+          setLatestReport(reportsRes.data[0]);
+        }
       } catch (err) {
         console.error('Failed to load dashboard stats:', err);
       }
@@ -237,21 +243,30 @@ export function DashboardView() {
             <BookOpen className="w-6 h-6 text-teal-600" /> Aktivitas Terbaru Hari Ini
           </h2>
           <span className="px-3 py-1.5 text-sm font-bold bg-emerald-100 text-emerald-800 rounded-xl">
-            Hari Ini
+            {latestReport?.report_date || 'Hari Ini'}
           </span>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="font-extrabold text-slate-900 text-lg">📚 Mengenal Hewan & Bahasa Isyarat</h3>
-          <p className="text-base text-slate-700 leading-relaxed font-medium">
-            Hari ini Aisyah belajar mengenal nama-nama hewan peliharaan dalam Bahasa Indonesia dan Bahasa Isyarat sederhana (Kucing, Kelinci, Burung). Aisyah sangat antusias dan berani maju di depan kelas!
-          </p>
+        {latestReport ? (
+          <div className="space-y-4">
+            <h3 className="font-extrabold text-slate-900 text-lg">
+              📚 {latestReport.theme || 'Aktivitas Belajar Harian'}
+            </h3>
+            <p className="text-base text-slate-700 leading-relaxed font-medium">
+              {latestReport.summary}
+            </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3">
-            <SafeImage src="https://images.unsplash.com/photo-1577896851231-70ef18881754?w=400" alt="Foto 1" className="w-full h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" />
-            <SafeImage src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400" alt="Foto 2" className="w-full h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" />
+            {latestReport.subtheme && (
+              <div className="text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200/80 px-3 py-1.5 rounded-xl inline-block">
+                Sub-tema: {latestReport.subtheme}
+              </div>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="p-6 text-center text-slate-500 font-bold bg-slate-50 rounded-2xl border border-slate-200">
+            Belum ada publikasi laporan harian untuk hari ini.
+          </div>
+        )}
       </div>
     </div>
   );

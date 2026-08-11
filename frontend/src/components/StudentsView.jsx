@@ -113,42 +113,68 @@ export function StudentsView() {
           Tidak ada data siswa yang ditemukan.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {students.map((st) => (
-            <div key={st.id} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between space-y-5 hover:shadow-xl hover:border-teal-300 transition-all duration-200">
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <SafeImage
-                    src={st.avatar_url}
-                    alt={st.full_name}
-                    isAvatar={true}
-                    fallbackText={st.nickname}
-                    className="w-14 h-14 rounded-2xl object-cover border-2 border-teal-200 shadow-sm shrink-0"
-                  />
+            <div
+              key={st.id}
+              className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm hover:shadow-xl hover:border-teal-400/80 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+            >
+              {/* Subtle top decoration accent */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 rounded-t-3xl" />
+
+              <div className="space-y-4 pt-1">
+                {/* Header Profile Info */}
+                <div className="flex items-center gap-3.5">
+                  <div className="relative shrink-0">
+                    <SafeImage
+                      src={st.avatar_url}
+                      alt={st.full_name}
+                      isAvatar={true}
+                      fallbackText={st.nickname || st.full_name}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-teal-100 shadow-sm group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" title="Aktif" />
+                  </div>
+
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-extrabold text-slate-900 text-base leading-snug break-words" title={st.full_name}>
+                    <h3 className="font-extrabold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-teal-700 transition-colors" title={st.full_name}>
                       {st.full_name}
                     </h3>
-                    <span className="inline-flex items-center mt-1.5 text-xs font-black text-teal-800 bg-teal-50 px-2.5 py-1 rounded-xl border border-teal-200/80">
-                      {st.class_name || 'TK A - Al Fatih'}
-                    </span>
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-block text-[11px] font-extrabold text-teal-800 bg-teal-50 border border-teal-200/70 px-2.5 py-0.5 rounded-lg">
+                        {st.class_name || 'TK A - Al Fatih'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center text-xs text-slate-600 border-t border-slate-100 pt-3.5 font-bold">
-                  <span className="text-slate-500">Total XP: <strong className="text-amber-600 font-black text-sm">{st.xp || 100} XP</strong></span>
-                  <span className="font-black text-teal-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">Level {st.level || 1}</span>
+                {/* Badges / Stats Section */}
+                <div className="grid grid-cols-2 gap-2 bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total XP</span>
+                    <span className="font-black text-amber-600 text-sm flex items-center gap-1">
+                      ⭐ {st.xp || 100} <span className="text-[10px] text-amber-500">XP</span>
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col text-right">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tingkat</span>
+                    <span className="font-black text-teal-700 text-sm">
+                      Level {st.level || 1}
+                    </span>
+                  </div>
                 </div>
               </div>
 
+              {/* Action Button */}
               <button
                 onClick={() => {
                   setSelectedStudent(st);
                   setIsModalOpen(true);
                 }}
-                className="w-full py-3 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white border border-teal-200/80 hover:border-teal-600 font-extrabold text-sm rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs group"
+                className="w-full mt-4 py-3 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white border border-teal-200/80 hover:border-teal-600 font-extrabold text-xs sm:text-sm rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
-                <Eye className="w-4 h-4 text-teal-600 group-hover:text-white transition" />
+                <Eye className="w-4 h-4 shrink-0" />
                 <span>Buka Digital Journey</span>
               </button>
             </div>
@@ -178,13 +204,14 @@ export function StudentsView() {
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-4 space-y-4">
-              <h5 className="font-black text-slate-900 text-sm uppercase tracking-wider text-teal-700">Histori Foto Portfolio Siswa:</h5>
-              <div className="grid grid-cols-2 gap-3">
-                <SafeImage src="https://images.unsplash.com/photo-1577896851231-70ef18881754?w=400" alt="Portfolio 1" className="w-full h-32 rounded-xl object-cover border border-slate-200 shadow-xs" />
-                <SafeImage src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400" alt="Portfolio 2" className="w-full h-32 rounded-xl object-cover border border-slate-200 shadow-xs" />
+            {selectedStudent.notes && (
+              <div className="border-t border-slate-200 pt-4 space-y-2">
+                <h5 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Catatan Guru:</h5>
+                <p className="text-sm font-medium text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-200 leading-relaxed">
+                  {selectedStudent.notes}
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </Modal>
       )}
