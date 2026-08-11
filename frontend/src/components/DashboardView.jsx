@@ -161,8 +161,8 @@ export function DashboardView() {
         {/* Welcome Header */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-md flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="space-y-2">
-            <span className="text-base font-extrabold text-teal-600 block">Selamat Pagi, Bu Ani, S.Pd 👋</span>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Wali Kelas TK A - Al Fatih (18 Siswa)</h1>
+            <span className="text-base font-extrabold text-teal-600 block">Selamat Datang, {user?.name || 'Ustadzah / Guru'} 👋</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Wali Kelas TK A ({stats.students} Siswa)</h1>
             <p className="text-base text-slate-600 font-medium">Buat laporan harian & narasi perkembangan siswa dengan bantuan AI</p>
           </div>
 
@@ -220,17 +220,17 @@ export function DashboardView() {
       <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-800 text-white p-8 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <SafeImage
-            src="https://images.unsplash.com/photo-1595454223600-91fbddbbf163?w=200"
-            alt="Aisyah"
+            src={user?.avatar_url || "https://images.unsplash.com/photo-1595454223600-91fbddbbf163?w=200"}
+            alt={user?.name || "Siswa"}
             isAvatar={true}
-            fallbackText="Aisyah"
+            fallbackText={user?.name || "Siswa"}
             className="w-20 h-20 rounded-full border-4 border-white object-cover shadow-lg shrink-0"
           />
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-xs font-bold text-teal-100">
               <GraduationCap className="w-4 h-4" /> TK A - Al Fatih
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black">Aisyah Putri Humaira</h1>
+            <h1 className="text-2xl sm:text-3xl font-black">{user?.name || 'Aisyah Putri Humaira'}</h1>
             <p className="text-sm font-semibold text-teal-100">Wali Kelas: Bu Ani, S.Pd (Ustadzah)</p>
           </div>
         </div>
@@ -242,8 +242,10 @@ export function DashboardView() {
           <h2 className="font-black text-slate-900 text-xl flex items-center gap-3">
             <BookOpen className="w-6 h-6 text-teal-600" /> Aktivitas Terbaru Hari Ini
           </h2>
-          <span className="px-3 py-1.5 text-sm font-bold bg-emerald-100 text-emerald-800 rounded-xl">
-            {latestReport?.report_date || 'Hari Ini'}
+          <span className="px-3.5 py-1.5 text-sm font-bold bg-emerald-100 text-emerald-800 rounded-xl">
+            {latestReport?.report_date
+              ? new Date(latestReport.report_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+              : 'Hari Ini'}
           </span>
         </div>
 

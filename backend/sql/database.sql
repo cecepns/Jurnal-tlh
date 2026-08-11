@@ -318,6 +318,11 @@ INSERT INTO `daily_report_attachments` (`id`, `daily_report_id`, `file_url`, `fi
 (1, 1, 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=600', 'image', 'Dokumentasi Belajar 1.jpg'),
 (2, 1, 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600', 'image', 'Karya Menggambar.jpg');
 
+-- Student Developments
+INSERT INTO `student_developments` (`id`, `school_id`, `student_id`, `teacher_id`, `period_month`, `bahasa_rating`, `isyarat_rating`, `sosial_rating`, `motorik_rating`, `kreativitas_rating`, `overall_teacher_notes`, `ai_generated_narrative`, `status`) VALUES
+(1, 1, 1, 4, 'Agustus 2026', 4, 5, 4, 5, 5, 'Aisyah sangat ceria, komunikatif, dan aktif memperagakan moves Bahasa Isyarat.', 'Aisyah menunjukkan perkembangan luar biasa bulan ini! Ia mampu memahami instruksi verbal dan memperagakan Isyarat abjad A-E secara mandiri dengan rasa percaya diri tinggi.', 'published'),
+(2, 1, 2, 4, 'Agustus 2026', 4, 3, 4, 4, 4, 'Ahmad aktif dalam kegiatan kelompok dan motorik kasar.', 'Ahmad berkembang dengan sangat baik, terutama pada aspek motorik dan interaksi sosial dengan teman sebaya.', 'published');
+
 -- Tagging Students in Daily Report
 INSERT INTO `daily_report_student_tags` (`daily_report_id`, `student_id`, `attachment_id`) VALUES
 (1, 1, 1),
