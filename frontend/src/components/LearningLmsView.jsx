@@ -111,7 +111,7 @@ export function LearningLmsView({ userRole }) {
           </h2>
 
           <div className="space-y-4">
-            {courses.map((course) => (
+            {displayCourses.map((course) => (
               <div
                 key={course.id}
                 onClick={() => setActiveCourse(course.id)}
