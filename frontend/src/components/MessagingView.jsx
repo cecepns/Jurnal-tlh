@@ -11,6 +11,8 @@ export function MessagingView() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const isTeacher = user?.role === 'teacher';
+
   useEffect(() => {
     fetchMessages();
   }, []);
@@ -18,7 +20,7 @@ export function MessagingView() {
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const res = await request.get(API_ENDPOINTS.MESSAGES.LIST);
+      const res = await request.get(`${API_ENDPOINTS.MESSAGES.LIST}?limit=50`);
       if (res.success) {
         setMessages(res.data);
       }
@@ -33,9 +35,13 @@ export function MessagingView() {
     e.preventDefault();
     if (!inputText.trim()) return;
 
+    const senderName = user?.name || (isTeacher ? 'Ustadzah Bu Ani' : 'Bapak Budi (Orang Tua)');
+
     try {
       const res = await request.post(API_ENDPOINTS.MESSAGES.SEND, {
-        sender: user?.name || 'Orang Tua',
+        sender: senderName,
+        sender_id: user?.id || 1,
+        message: inputText,
         text: inputText
       });
       if (res.success) {
@@ -51,24 +57,30 @@ export function MessagingView() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Pesan & Diskusi Perkembangan</h1>
-          <p className="text-sm text-slate-600 font-medium mt-1">Interaksi langsung antara Orang Tua & Wali Kelas Bu Ani, S.Pd</p>
+          <h1 className="text-2xl font-black text-slate-900">Pesan & Diskusi Orang Tua & Guru</h1>
+          <p className="text-sm text-slate-600 font-medium mt-1">
+            {isTeacher ? 'Komunikasi langsung dengan Orang Tua Wali Murid' : 'Interaksi langsung antara Orang Tua & Wali Kelas Ustadzah'}
+          </p>
         </div>
-        <span className="px-3.5 py-1.5 bg-teal-100 text-teal-800 font-extrabold text-xs rounded-xl border border-teal-200">Online</span>
+        <span className="px-3.5 py-1.5 bg-teal-100 text-teal-800 font-extrabold text-xs rounded-xl border border-teal-200">
+          Max 50 Pesan Terakhir
+        </span>
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
         {/* Chat Messages Box */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/50">
           {messages.map((msg) => {
-            const isMe = msg.sender.includes(user?.name?.split(' ')[0] || 'Budi') || msg.sender.includes('Budi');
+            const senderStr = msg.sender || msg.sender_name || 'Pengguna';
+            const isMe = senderStr.toLowerCase().includes((user?.name || '').toLowerCase().split(' ')[0]) || 
+                         (isTeacher && (senderStr.includes('Ustadzah') || senderStr.includes('Guru') || senderStr.includes('Ani')));
             return (
-              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id || Math.random()} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-md p-4 rounded-2xl space-y-1 shadow-xs ${
                   isMe ? 'bg-teal-600 text-white rounded-br-none' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
                 }`}>
-                  <div className="text-xs font-bold opacity-80">{msg.sender} • {msg.timestamp}</div>
-                  <p className="text-base leading-relaxed font-medium">{msg.text}</p>
+                  <div className="text-xs font-bold opacity-80">{senderStr} • {msg.timestamp || msg.created_at || 'Baru saja'}</div>
+                  <p className="text-base leading-relaxed font-medium">{msg.text || msg.message}</p>
                 </div>
               </div>
             );
@@ -79,14 +91,14 @@ export function MessagingView() {
         <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-200 flex gap-3">
           <input
             type="text"
-            placeholder="Tulis pesan ke Ustadzah Wali Kelas..."
+            placeholder={isTeacher ? "Tulis pesan balasan untuk Orang Tua Wali..." : "Tulis pesan ke Ustadzah Wali Kelas..."}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             className="flex-1 px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-600 font-medium"
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-2xl shadow-md transition flex items-center gap-2 shrink-0"
+            className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-2xl shadow-md transition flex items-center gap-2 shrink-0 cursor-pointer"
           >
             <Send className="w-4 h-4" /> Kirim
           </button>

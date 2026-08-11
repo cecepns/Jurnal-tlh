@@ -381,7 +381,7 @@ app.get('/api/students', async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   const studentData = {
-    school_id: 1,
+    school_id: req.body.school_id || 1,
     class_id: req.body.class_id || 1,
     nisn: req.body.nisn || `00${Date.now().toString().slice(-8)}`,
     full_name: req.body.full_name,
@@ -420,8 +420,8 @@ app.get('/api/classes', async (req, res) => {
 
 app.post('/api/classes', async (req, res) => {
   const classData = {
-    school_id: 1,
-    academic_year_id: 1,
+    school_id: req.body.school_id || 1,
+    academic_year_id: req.body.academic_year_id || 1,
     name: req.body.name,
     level: req.body.level || 'TK A'
   };
@@ -467,7 +467,7 @@ app.get('/api/daily-reports', async (req, res) => {
 
 app.post('/api/daily-reports', async (req, res) => {
   const reportData = {
-    school_id: 1,
+    school_id: req.body.school_id || 1,
     class_id: req.body.class_id || 1,
     teacher_id: req.body.teacher_id || 4,
     report_date: req.body.report_date || new Date().toISOString().split('T')[0],
@@ -717,8 +717,28 @@ app.post('/api/quizzes', async (req, res) => {
 // Messages API
 app.get('/api/messages', async (req, res) => {
   try {
-    const [rows] = await dbPool.query('SELECT * FROM messages ORDER BY created_at ASC');
-    res.json({ success: true, data: rows });
+    const limit = parseInt(req.query.limit) || 50;
+    const [rows] = await dbPool.query(
+      `SELECT m.*, u.name as sender_name, u.role as sender_role 
+       FROM messages m 
+       LEFT JOIN users u ON m.sender_id = u.id 
+       ORDER BY m.created_at DESC LIMIT ?`,
+      [limit]
+    );
+
+    const formatted = rows.map(r => ({
+      id: r.id,
+      school_id: r.school_id,
+      sender_id: r.sender_id,
+      receiver_id: r.receiver_id,
+      sender: r.sender_name || (r.sender_id === 4 ? 'Bu Ani (Guru)' : 'Bapak Budi (Orang Tua)'),
+      text: r.message,
+      message: r.message,
+      created_at: r.created_at,
+      timestamp: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }));
+
+    res.json({ success: true, data: formatted.reverse() });
   } catch (err) {
     console.error('MySQL messages query error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal mengambil data pesan' });
@@ -726,16 +746,42 @@ app.get('/api/messages', async (req, res) => {
 });
 
 app.post('/api/messages', async (req, res) => {
-  const { sender_id = 1, receiver_id = 4, message } = req.body;
+  const { school_id = 1, sender_id, receiver_id, message, text } = req.body;
+  const content = message || text;
+
+  if (!content) {
+    return res.status(400).json({ success: false, message: 'Isi pesan wajib diisi!' });
+  }
+
+  const activeSenderId = sender_id || 5; // Default Parent ID
+  const activeReceiverId = receiver_id || 4; // Default Teacher ID
+
   try {
     const [result] = await dbPool.query(
-      'INSERT INTO messages (school_id, sender_id, receiver_id, message) VALUES (1, ?, ?, ?)',
-      [sender_id, receiver_id, message]
+      'INSERT INTO messages (school_id, sender_id, receiver_id, message) VALUES (?, ?, ?, ?)',
+      [school_id, activeSenderId, activeReceiverId, content]
     );
-    res.json({ success: true, message: 'Pesan berhasil dikirim', data: { id: result.insertId, message } });
+
+    const [senderRows] = await dbPool.query('SELECT name FROM users WHERE id = ?', [activeSenderId]);
+    const senderName = senderRows[0]?.name || (req.body.sender || 'Pengguna');
+
+    res.json({
+      success: true,
+      message: 'Pesan berhasil dikirim',
+      data: {
+        id: result.insertId,
+        school_id,
+        sender_id: activeSenderId,
+        receiver_id: activeReceiverId,
+        sender: senderName,
+        text: content,
+        message: content,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    });
   } catch (err) {
     console.error('MySQL insert message error:', err.message);
-    res.status(500).json({ success: false, message: 'Gagal mengirim pesan' });
+    res.status(500).json({ success: false, message: 'Gagal mengirim pesan ke database' });
   }
 });
 

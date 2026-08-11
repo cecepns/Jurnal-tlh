@@ -43,6 +43,7 @@ export function SidebarLayout() {
       { path: '/quizzes', label: 'Kuis & Games Interaktif', icon: Award },
       { path: '/students', label: 'Daftar Siswa & Portfolio', icon: GraduationCap },
       { path: '/development', label: 'Perkembangan Bulanan', icon: Heart },
+      { path: '/messaging', label: 'Chat & Pesan Orang Tua', icon: MessageSquare },
     ],
     parent: [
       { path: '/dashboard', label: 'Timeline Anak Hari Ini', icon: LayoutDashboard },
