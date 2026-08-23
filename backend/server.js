@@ -59,7 +59,6 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 });
 
 // MySQL Pool Connection Configuration
-let dbConnected = false;
 const dbPool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -76,33 +75,28 @@ const dbPool = mysql.createPool({
     const connection = await dbPool.getConnection();
     console.log(`✅ Connected to MySQL Database: ${process.env.DB_NAME || 'the_little_hijabi'}`);
     connection.release();
-    dbConnected = true;
   } catch (err) {
-    console.warn(`⚠️ MySQL Connection Warning: ${err.message}`);
-    console.warn(`ℹ️ Operating in fallback mode with mock data.`);
-    dbConnected = false;
+    console.error(`❌ MySQL Connection Error: ${err.message}`);
   }
 })();
 
-// Initialize server without mock data
-
-
 // Health Check API
 app.get('/api/health', async (req, res) => {
-  let isDbOk = dbConnected;
-  if (dbConnected) {
-    try {
-      await dbPool.query('SELECT 1');
-    } catch {
-      isDbOk = false;
-    }
+  try {
+    await dbPool.query('SELECT 1');
+    res.json({
+      success: true,
+      message: 'The Little Hijabi API Server is running smoothly!',
+      database: 'connected',
+      timestamp: new Date()
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed',
+      error: err.message
+    });
   }
-  res.json({
-    success: true,
-    message: 'The Little Hijabi API Server is running smoothly!',
-    database: isDbOk ? 'connected' : 'disconnected (mock mode)',
-    timestamp: new Date()
-  });
 });
 
 // Authentication Endpoint
@@ -121,7 +115,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
     const [rows] = await dbPool.query(query, params);
     if (rows.length === 0) {
-      return res.status(401).json({ success: false, message: 'Email tidak terdaftar!' });
+      return res.status(401).json({ success: false, message: 'Email / user tidak terdaftar!' });
     }
 
     const user = rows[0];
@@ -173,7 +167,7 @@ app.get('/api/auth/profile', async (req, res) => {
     try {
       decoded = jwt.verify(token, JWT_SECRET);
     } catch (err) {
-      // Invalid or expired token
+      return res.status(401).json({ success: false, message: 'Sesi token tidak valid atau telah kedaluwarsa' });
     }
   }
 
@@ -275,12 +269,19 @@ app.delete('/api/schools/:id', async (req, res) => {
 
 // Subscriptions API
 app.get('/api/subscriptions', async (req, res) => {
-  const plans = [
-    { id: 1, name: 'Starter Basic', price: 'Rp 5.000.000 / tahun', max_students: 50, features: ['Dashboard Admin & Guru', 'Laporan Harian Siswa', 'Akses LMS Bahasa Isyarat Basic'], active_schools: 1 },
-    { id: 2, name: 'Standard Growth', price: 'Rp 8.500.000 / tahun', max_students: 150, features: ['Semua Fitur Starter', 'AI Narrative Report (500x/bln)', 'Monitoring Kepala Sekolah', 'Support WA 24/7'], active_schools: 1 },
-    { id: 3, name: 'Enterprise Pro', price: 'Rp 15.000.000 / tahun', max_students: 500, features: ['Semua Fitur Standard', 'AI Narrative Unlimited', 'Multi-Tenant Multi-Cabang', 'Custom Domain Sekolah', 'Prioritas Support & Training'], active_schools: 1 }
-  ];
-  res.json({ success: true, data: plans });
+  try {
+    const [schools] = await dbPool.query('SELECT COUNT(*) as count FROM schools WHERE status = "active"');
+    const activeCount = schools[0]?.count || 1;
+    const plans = [
+      { id: 1, name: 'Starter Basic', price: 'Rp 5.000.000 / tahun', max_students: 50, features: ['Dashboard Admin & Guru', 'Laporan Harian Siswa', 'Akses LMS Bahasa Isyarat Basic'], active_schools: activeCount },
+      { id: 2, name: 'Standard Growth', price: 'Rp 8.500.000 / tahun', max_students: 150, features: ['Semua Fitur Starter', 'AI Narrative Report (500x/bln)', 'Monitoring Kepala Sekolah', 'Support WA 24/7'], active_schools: activeCount },
+      { id: 3, name: 'Enterprise Pro', price: 'Rp 15.000.000 / tahun', max_students: 500, features: ['Semua Fitur Standard', 'AI Narrative Unlimited', 'Multi-Tenant Multi-Cabang', 'Custom Domain Sekolah', 'Prioritas Support & Training'], active_schools: activeCount }
+    ];
+    res.json({ success: true, data: plans });
+  } catch (err) {
+    console.error('MySQL subscriptions query error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data paket langganan' });
+  }
 });
 
 // Users Endpoint
@@ -513,7 +514,7 @@ app.get('/api/developments', async (req, res) => {
   }
 });
 
-// AI Report Generator Endpoint (Powered by Gemini 2.5 Flash API)
+// AI Report Generator Endpoint
 app.post('/api/ai/generate-report', async (req, res) => {
   const { student_name, teacher_notes } = req.body;
   const promptNotes = teacher_notes || 'Anak aktif dan sangat senang belajar Bahasa Isyarat.';
@@ -590,30 +591,20 @@ Tolong berikan respons dalam bentuk JSON murni dengan format persis berikut tanp
     }
   } catch (err) {
     console.error('Gemini API Error:', err.message);
+    return res.status(500).json({ success: false, message: 'Gagal menghasilkan narasi AI: ' + err.message });
   }
 
-  const fallbackNarrative = `${student} menunjukkan minat yang luar biasa dalam mengikuti pembelajaran. Berdasarkan catatan perkembangan (${promptNotes}), Ananda mampu merespons instruksi guru dengan sikap santun, menunjukkan keterampilan motorik yang makin matang, serta sangat antusias saat memperagakan gerakan Bahasa Isyarat bersama teman-teman kelasnya.`;
-
-  res.json({
-    success: true,
-    data: {
-      narrative: fallbackNarrative,
-      suggestions: [
-        'Berikan pujian atas keaktifan Ananda di rumah.',
-        'Ajak Ananda mengulang 3 isyarat abjad sebelum tidur.'
-      ]
-    }
-  });
+  res.status(500).json({ success: false, message: 'Tidak menerima respons yang valid dari layanan AI.' });
 });
 
 // LMS Courses & Quizzes API
 app.get('/api/courses', async (req, res) => {
   try {
-    const [rows] = await dbPool.query('SELECT * FROM courses');
+    const [rows] = await dbPool.query('SELECT * FROM courses ORDER BY id DESC');
     res.json({ success: true, data: rows });
   } catch (err) {
     console.error('MySQL courses query error:', err.message);
-    res.status(500).json({ success: false, message: 'Gagal mengambil data modul materi' });
+    res.status(500).json({ success: false, message: 'Gagal mengambil data modul materi dari database' });
   }
 });
 
@@ -632,10 +623,10 @@ app.post('/api/courses', async (req, res) => {
       'INSERT INTO courses (title, category, level, description, thumbnail_url) VALUES (?, ?, ?, ?, ?)',
       [course.title, course.category, course.level, course.description, course.thumbnail]
     );
-    res.json({ success: true, message: 'Modul materi baru berhasil disimpan!', data: { id: result.insertId, ...course } });
+    res.json({ success: true, message: 'Modul materi baru berhasil disimpan di Database!', data: { id: result.insertId, ...course } });
   } catch (err) {
     console.error('MySQL insert course error:', err.message);
-    res.status(500).json({ success: false, message: 'Gagal menambahkan modul materi' });
+    res.status(500).json({ success: false, message: 'Gagal menambahkan modul materi ke database' });
   }
 });
 
@@ -647,7 +638,7 @@ app.put('/api/courses/:id', async (req, res) => {
       'UPDATE courses SET title = COALESCE(?, title), category = COALESCE(?, category), level = COALESCE(?, level), description = COALESCE(?, description), thumbnail_url = COALESCE(?, thumbnail_url) WHERE id = ?',
       [title, category, level, description, thumbnail, id]
     );
-    res.json({ success: true, message: 'Modul materi berhasil diperbarui!' });
+    res.json({ success: true, message: 'Modul materi berhasil diperbarui di Database!' });
   } catch (err) {
     console.error('MySQL update course error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal mengupdate modul materi' });
@@ -658,7 +649,7 @@ app.delete('/api/courses/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   try {
     await dbPool.query('DELETE FROM courses WHERE id = ?', [id]);
-    res.json({ success: true, message: 'Modul materi berhasil dihapus!' });
+    res.json({ success: true, message: 'Modul materi berhasil dihapus dari Database!' });
   } catch (err) {
     console.error('MySQL delete course error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal menghapus modul materi' });
@@ -668,7 +659,7 @@ app.delete('/api/courses/:id', async (req, res) => {
 // Quizzes API
 app.get('/api/quizzes', async (req, res) => {
   try {
-    const [quizzes] = await dbPool.query('SELECT * FROM quizzes');
+    const [quizzes] = await dbPool.query('SELECT * FROM quizzes ORDER BY id DESC');
     const [questions] = await dbPool.query('SELECT * FROM quiz_questions');
 
     const formatted = quizzes.map(q => {
@@ -678,17 +669,14 @@ app.get('/api/quizzes', async (req, res) => {
         title: q.title,
         xp: q.xp_reward,
         question: qQuestions[0]?.question_text || q.title,
-        options: qQuestions[0]?.options_json ? (typeof qQuestions[0].options_json === 'string' ? JSON.parse(qQuestions[0].options_json) : qQuestions[0].options_json) : [
-          { id: 'a', text: 'Huruf A' },
-          { id: 'b', text: 'Huruf B' }
-        ]
+        options: qQuestions[0]?.options_json ? (typeof qQuestions[0].options_json === 'string' ? JSON.parse(qQuestions[0].options_json) : qQuestions[0].options_json) : []
       };
     });
 
     res.json({ success: true, data: formatted });
   } catch (err) {
     console.error('MySQL quizzes query error:', err.message);
-    res.status(500).json({ success: false, message: 'Gagal mengambil data kuis' });
+    res.status(500).json({ success: false, message: 'Gagal mengambil data kuis dari database' });
   }
 });
 
@@ -731,7 +719,7 @@ app.get('/api/messages', async (req, res) => {
       school_id: r.school_id,
       sender_id: r.sender_id,
       receiver_id: r.receiver_id,
-      sender: r.sender_name || (r.sender_id === 4 ? 'Bu Ani (Guru)' : 'Bapak Budi (Orang Tua)'),
+      sender: r.sender_name || 'Pengguna',
       text: r.message,
       message: r.message,
       created_at: r.created_at,
@@ -741,7 +729,7 @@ app.get('/api/messages', async (req, res) => {
     res.json({ success: true, data: formatted.reverse() });
   } catch (err) {
     console.error('MySQL messages query error:', err.message);
-    res.status(500).json({ success: false, message: 'Gagal mengambil data pesan' });
+    res.status(500).json({ success: false, message: 'Gagal mengambil data pesan dari database' });
   }
 });
 
@@ -753,8 +741,8 @@ app.post('/api/messages', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Isi pesan wajib diisi!' });
   }
 
-  const activeSenderId = sender_id || 5; // Default Parent ID
-  const activeReceiverId = receiver_id || 4; // Default Teacher ID
+  const activeSenderId = sender_id || 5;
+  const activeReceiverId = receiver_id || 4;
 
   try {
     const [result] = await dbPool.query(
@@ -782,6 +770,218 @@ app.post('/api/messages', async (req, res) => {
   } catch (err) {
     console.error('MySQL insert message error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal mengirim pesan ke database' });
+  }
+});
+
+// ==========================================
+// 1. DICTIONARY API (Real Database MySQL)
+// ==========================================
+app.get('/api/dictionary', async (req, res) => {
+  const { search = '', category = '', level = '' } = req.query;
+
+  try {
+    let query = 'SELECT * FROM dictionary_items WHERE 1=1';
+    const params = [];
+    if (search) {
+      query += ' AND (word LIKE ? OR description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    if (category && category !== 'all') {
+      query += ' AND category = ?';
+      params.push(category);
+    }
+    if (level && level !== 'all') {
+      query += ' AND level = ?';
+      params.push(level);
+    }
+    query += ' ORDER BY id DESC';
+
+    const [rows] = await dbPool.query(query, params);
+    const formatted = rows.map(r => ({
+      ...r,
+      tags: typeof r.tags === 'string' ? JSON.parse(r.tags) : (r.tags || [])
+    }));
+    res.json({ success: true, data: formatted });
+  } catch (err) {
+    console.error('MySQL dictionary query error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data kamus dari database' });
+  }
+});
+
+app.post('/api/dictionary', async (req, res) => {
+  const { word, category = 'umum', level = 'Level 1', image_url, description = '', tags = [] } = req.body;
+
+  if (!word) {
+    return res.status(400).json({ success: false, message: 'Kata isyarat wajib diisi!' });
+  }
+
+  try {
+    const [result] = await dbPool.query(
+      'INSERT INTO dictionary_items (word, category, level, image_url, illustration_url, description, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [word, category, level, image_url || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=500', image_url || null, description, JSON.stringify(tags || [word.toLowerCase()])]
+    );
+    res.json({
+      success: true,
+      message: 'Kata kamus baru berhasil disimpan di Database!',
+      data: { id: result.insertId, word, category, level, image_url, description, tags }
+    });
+  } catch (err) {
+    console.error('MySQL insert dictionary error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal menambahkan kata isyarat ke database' });
+  }
+});
+
+// ==========================================
+// 2. DIGITAL LIBRARY API (Real Database MySQL)
+// ==========================================
+app.get('/api/library', async (req, res) => {
+  const { search = '', type = '', level = '', category = '' } = req.query;
+
+  try {
+    let query = 'SELECT * FROM library_items WHERE 1=1';
+    const params = [];
+
+    if (search) {
+      query += ' AND (title LIKE ? OR description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    if (type && type !== 'all') {
+      query += ' AND type = ?';
+      params.push(type);
+    }
+    if (level && level !== 'all') {
+      query += ' AND level = ?';
+      params.push(level);
+    }
+    if (category && category !== 'all') {
+      query += ' AND category = ?';
+      params.push(category);
+    }
+    query += ' ORDER BY id DESC';
+
+    const [rows] = await dbPool.query(query, params);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('MySQL library query error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data digital library dari database' });
+  }
+});
+
+app.post('/api/library', async (req, res) => {
+  const { title, type = 'buku_bacaan', category = 'Bahasa Indonesia', level = 'Level 1', file_url, thumbnail_url, description = '', total_pages = 10, file_size = '2.0 MB' } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ success: false, message: 'Judul bahan ajar wajib diisi!' });
+  }
+
+  try {
+    const [result] = await dbPool.query(
+      'INSERT INTO library_items (title, type, category, level, file_url, thumbnail_url, description, total_pages, file_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, type, category, level, file_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', thumbnail_url || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500', description, total_pages, file_size]
+    );
+    res.json({
+      success: true,
+      message: 'Bahan ajar berhasil disimpan di Database Perpustakaan!',
+      data: { id: result.insertId, title, type, category, level, file_url, thumbnail_url, description, total_pages, file_size }
+    });
+  } catch (err) {
+    console.error('MySQL insert library error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan bahan ajar ke database' });
+  }
+});
+
+app.delete('/api/library/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await dbPool.query('DELETE FROM library_items WHERE id = ?', [id]);
+    res.json({ success: true, message: 'File materi berhasil dihapus dari database' });
+  } catch (err) {
+    console.error('MySQL delete library error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal menghapus file materi dari database' });
+  }
+});
+
+// ==========================================
+// 3. DYNAMIC CURRICULUM API (Real Database MySQL)
+// ==========================================
+const formatCurriculumResponse = (items) => {
+  const isyaratLevels = items.filter(i => i.track === 'isyarat').sort((a, b) => (a.order_no || 0) - (b.order_no || 0));
+  const indonesiaLevels = items.filter(i => i.track === 'bahasa_indonesia').sort((a, b) => (a.order_no || 0) - (b.order_no || 0));
+
+  return {
+    isyarat: {
+      title: 'Kurikulum LMS Bahasa Isyarat Inklusif',
+      levels: isyaratLevels
+    },
+    bahasa_indonesia: {
+      title: 'Kurikulum LMS Bahasa Indonesia & Literasi Dini',
+      levels: indonesiaLevels
+    },
+    raw: items
+  };
+};
+
+app.get('/api/curriculum', async (req, res) => {
+  try {
+    const [rows] = await dbPool.query('SELECT * FROM curriculums ORDER BY track, order_no, id ASC');
+    const formatted = rows.map(r => ({
+      ...r,
+      topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : (r.topics || [])
+    }));
+    res.json({ success: true, data: formatCurriculumResponse(formatted) });
+  } catch (err) {
+    console.error('MySQL curriculum query error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data kurikulum dari database' });
+  }
+});
+
+app.post('/api/curriculum', async (req, res) => {
+  const { track = 'isyarat', level = 'Level 1', name = 'Nama Level Baru', topics = [], order_no = 1 } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'Judul capaian kurikulum wajib diisi!' });
+  }
+
+  try {
+    const [result] = await dbPool.query(
+      'INSERT INTO curriculums (track, level, name, order_no, topics) VALUES (?, ?, ?, ?, ?)',
+      [track, level, name, Number(order_no) || 1, JSON.stringify(topics || [])]
+    );
+    res.json({
+      success: true,
+      message: 'Jenjang Kurikulum baru berhasil disimpan di Database!',
+      data: { id: result.insertId, track, level, name, order_no, topics }
+    });
+  } catch (err) {
+    console.error('MySQL insert curriculum error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal menambahkan jenjang kurikulum ke database' });
+  }
+});
+
+app.put('/api/curriculum/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { track, level, name, topics, order_no } = req.body;
+
+  try {
+    await dbPool.query(
+      'UPDATE curriculums SET track = COALESCE(?, track), level = COALESCE(?, level), name = COALESCE(?, name), order_no = COALESCE(?, order_no), topics = COALESCE(?, topics) WHERE id = ?',
+      [track, level, name, order_no !== undefined ? Number(order_no) : null, topics ? JSON.stringify(topics) : null, id]
+    );
+    res.json({ success: true, message: 'Data Kurikulum berhasil diperbarui di Database!' });
+  } catch (err) {
+    console.error('MySQL update curriculum error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal mengupdate kurikulum di database' });
+  }
+});
+
+app.delete('/api/curriculum/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await dbPool.query('DELETE FROM curriculums WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Jenjang Kurikulum berhasil dihapus dari Database' });
+  } catch (err) {
+    console.error('MySQL delete curriculum error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal menghapus jenjang kurikulum dari database' });
   }
 });
 

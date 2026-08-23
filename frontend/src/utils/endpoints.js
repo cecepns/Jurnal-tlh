@@ -56,6 +56,21 @@ export const API_ENDPOINTS = {
     LIST: "/messages",
     SEND: "/messages",
   },
+  DICTIONARY: {
+    LIST: "/dictionary",
+    CREATE: "/dictionary",
+  },
+  LIBRARY: {
+    LIST: "/library",
+    CREATE: "/library",
+    DELETE: (id) => `/library/${id}`,
+  },
+  CURRICULUM: {
+    GET: "/curriculum",
+    CREATE: "/curriculum",
+    UPDATE: (id) => `/curriculum/${id}`,
+    DELETE: (id) => `/curriculum/${id}`,
+  },
   UPLOADS: {
     UPLOAD_FILE: "/upload",
     GET_URL: (filePath) => getUploadUrl(filePath),

@@ -8,6 +8,9 @@ import { SidebarLayout } from './components/SidebarLayout';
 
 // View Components
 import { DashboardView } from './components/DashboardView';
+import { CurriculumView } from './components/CurriculumView';
+import { SignDictionaryView } from './components/SignDictionaryView';
+import { DigitalLibraryView } from './components/DigitalLibraryView';
 import { SchoolsView } from './components/SchoolsView';
 import { SubscriptionsView } from './components/SubscriptionsView';
 import { TeachersView } from './components/TeachersView';
@@ -36,6 +39,9 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<SidebarLayout />}>
               <Route path="/dashboard" element={<DashboardView />} />
+              <Route path="/curriculum" element={<CurriculumView />} />
+              <Route path="/sign-dictionary" element={<SignDictionaryView />} />
+              <Route path="/library" element={<DigitalLibraryView />} />
               <Route path="/schools" element={<SchoolsView />} />
               <Route path="/subscriptions" element={<SubscriptionsView />} />
               <Route path="/teachers" element={<TeachersView />} />
@@ -47,6 +53,8 @@ export default function App() {
               <Route path="/daily-reports" element={<DailyReportsView />} />
               <Route path="/development" element={<DevelopmentReportsView />} />
               <Route path="/ai-generator" element={<AiReportGenerator />} />
+              <Route path="/lms-isyarat" element={<LearningLmsView defaultTab="learning" />} />
+              <Route path="/lms-indonesia" element={<LearningLmsView defaultTab="learning" />} />
               <Route path="/learning" element={<LearningLmsView defaultTab="learning" />} />
               <Route path="/quizzes" element={<LearningLmsView defaultTab="quizzes" />} />
               <Route path="/messaging" element={<MessagingView />} />

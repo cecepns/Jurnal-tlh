@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Award, Sparkles, BookOpen, Star, Plus, Edit, Trash2, Video } from 'lucide-react';
+import { Play, Award, Sparkles, BookOpen, Star, Plus, Edit, Trash2, Video, FileText, Search, ArrowRight } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SafeImage } from './SafeImage';
 import { request } from '../utils/request';
 import { API_ENDPOINTS } from '../utils/endpoints';
@@ -8,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export function LearningLmsView({ defaultTab = 'learning' }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const canManage = user?.role === 'teacher' || user?.role === 'super_admin' || user?.role === 'school_admin';
 
@@ -15,6 +18,8 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
   const [quizzesList, setQuizzesList] = useState([]);
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'learning' or 'quizzes'
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') === 'indonesia' ? 'Bahasa Indonesia' : 'Bahasa Isyarat');
+  const [selectedLevel, setSelectedLevel] = useState('all');
 
   const [quizAnswer, setQuizAnswer] = useState(null);
   const [xp, setXp] = useState(240);
@@ -63,20 +68,47 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
         const fallbackCourses = [
           {
             id: 1,
-            title: 'Bahasa Isyarat Dasar Anak',
+            title: 'Alfabet Isyarat (A - Z) & Gerakan Tangan Mandiri',
             category: 'Bahasa Isyarat',
             level: 'Level 1',
             thumbnail: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400',
-            description: 'Mengenal isyarat abjad, kata kerja, dan interaksi sehari-hari dengan materi video interaktif.',
+            description: 'Mengenal isyarat abjad A-Z BISINDO dengan gerakan jari dan posisi tangan yang tepat.',
             video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
           },
           {
             id: 2,
-            title: 'Pengenalan Alfabet & Kata',
+            title: 'Angka Isyarat (0 - 10) & Berhitung Ceria',
+            category: 'Bahasa Isyarat',
+            level: 'Level 1',
+            thumbnail: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=400',
+            description: 'Panduan isyarat bilangan 0 sampai 10 dan latihan berhitung bersama guru.',
+            video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+          },
+          {
+            id: 3,
+            title: 'Tema Siapa Aku & Keluarga Tercinta',
+            category: 'Bahasa Isyarat',
+            level: 'Level 1',
+            thumbnail: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400',
+            description: 'Isyarat Ayah, Ibu, Kakak, Adik, Rumah Tinggal, Hobi, serta Makanan & Minuman.',
+            video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+          },
+          {
+            id: 4,
+            title: 'Pra Membaca: Sensori Fonik & Pengenalan Huruf Vokal',
+            category: 'Bahasa Indonesia',
+            level: 'Pra Membaca',
+            thumbnail: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400',
+            description: 'Belajar bunyi vokal A, I, U, E, O dan mencocokkan lambang huruf dengan gambar fabel.',
+            video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+          },
+          {
+            id: 5,
+            title: 'Membaca Suku Kata Terbuka (BA-JU, BO-LA)',
             category: 'Bahasa Indonesia',
             level: 'Level 1',
-            thumbnail: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400',
-            description: 'Belajar mengeja dan menderet kata vokal sederhana dengan ceria.',
+            thumbnail: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400',
+            description: 'Merangkai suku kata bermakna dengan riang dan intonasi yang tepat.',
             video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
           }
         ];
@@ -94,13 +126,19 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
     }
   };
 
-  const currentCourseObj = coursesList.find(c => c.id === activeCourseId) || coursesList[0] || {};
+  const filteredCourses = coursesList.filter(c => {
+    const matchCat = selectedCategory === 'all' || c.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const matchLvl = selectedLevel === 'all' || c.level?.toLowerCase() === selectedLevel.toLowerCase();
+    return matchCat && matchLvl;
+  });
+
+  const currentCourseObj = coursesList.find(c => c.id === activeCourseId) || filteredCourses[0] || coursesList[0] || {};
 
   const handleOpenAddCourse = () => {
     setSelectedCourse(null);
     setCourseFormData({
       title: '',
-      category: 'Bahasa Isyarat',
+      category: selectedCategory === 'all' ? 'Bahasa Isyarat' : selectedCategory,
       level: 'Level 1',
       description: '',
       thumbnail: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400',
@@ -227,7 +265,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="px-3.5 py-1 bg-teal-900/60 border border-teal-400/30 rounded-full text-xs font-black uppercase tracking-wider text-teal-200">
-              LMS Platform Belajar
+              LMS Modul & Video Pembelajaran
             </span>
             {canManage && (
               <span className="px-3 py-0.5 bg-amber-400 text-slate-900 text-xs font-black rounded-lg">
@@ -235,8 +273,10 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
               </span>
             )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black">Modul Bahasa Isyarat & Kuis Interaktif</h1>
-          <p className="text-teal-100 text-base font-medium">Media pembelajaran interaktif khusus anak-anak & ustadzah pendamping</p>
+          <h1 className="text-2xl sm:text-3xl font-black">Modul Belajar Inklusif & Video</h1>
+          <p className="text-teal-100 text-base font-medium">
+            Media video interaktif terstruktur per level (Bahasa Isyarat & Bahasa Indonesia)
+          </p>
         </div>
 
         <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 shrink-0">
@@ -253,46 +293,108 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
         </div>
       </div>
 
-      {/* Tabs Navigation: Modul Bahasa Isyarat vs Kuis & Games */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
-        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-4">
+      {/* Quick Access Shortcuts Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div
+          onClick={() => navigate('/sign-dictionary')}
+          className="p-5 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-3xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition flex items-center justify-between"
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-black text-teal-700 uppercase">Kamus Visual</span>
+            <h4 className="text-base font-black text-slate-900">Kamus Isyarat Bergambar</h4>
+            <p className="text-xs text-slate-600">Cari kosakata gambar isyarat instan</p>
+          </div>
+          <span className="w-10 h-10 rounded-2xl bg-teal-600 text-white flex items-center justify-center text-lg font-bold shadow-md">
+            🤟
+          </span>
+        </div>
+
+        <div
+          onClick={() => navigate('/library')}
+          className="p-5 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-3xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition flex items-center justify-between"
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-black text-indigo-700 uppercase">Perpustakaan</span>
+            <h4 className="text-base font-black text-slate-900">Buku & Worksheet PDF</h4>
+            <p className="text-xs text-slate-600">Buka PDF latihan & bahan bacaan</p>
+          </div>
+          <span className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg font-bold shadow-md">
+            📖
+          </span>
+        </div>
+
+        <div
+          onClick={() => navigate('/curriculum')}
+          className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-3xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition flex items-center justify-between"
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-black text-amber-700 uppercase">Silabus</span>
+            <h4 className="text-base font-black text-slate-900">Struktur Kurikulum</h4>
+            <p className="text-xs text-slate-600">Lihat tahapan Pra Membaca s.d. Level 5</p>
+          </div>
+          <span className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-lg font-bold shadow-md">
+            🎯
+          </span>
+        </div>
+      </div>
+
+      {/* Category Tabs & Sub Filters */}
+      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2.5">
           <button
-            onClick={() => setActiveTab('learning')}
-            className={`flex items-center justify-center gap-2 px-5 py-3 font-black text-sm sm:text-base rounded-2xl transition ${
-              activeTab === 'learning'
+            onClick={() => { setSelectedCategory('Bahasa Isyarat'); setActiveTab('learning'); }}
+            className={`px-5 py-2.5 rounded-2xl font-black text-sm transition ${
+              selectedCategory === 'Bahasa Isyarat' && activeTab === 'learning'
                 ? 'bg-teal-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            <BookOpen className="w-5 h-5 shrink-0" /> Modul & Video
+            🤟 LMS Bahasa Isyarat
+          </button>
+          <button
+            onClick={() => { setSelectedCategory('Bahasa Indonesia'); setActiveTab('learning'); }}
+            className={`px-5 py-2.5 rounded-2xl font-black text-sm transition ${
+              selectedCategory === 'Bahasa Indonesia' && activeTab === 'learning'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            📖 LMS Bahasa Indonesia
           </button>
           <button
             onClick={() => setActiveTab('quizzes')}
-            className={`flex items-center justify-center gap-2 px-5 py-3 font-black text-sm sm:text-base rounded-2xl transition ${
+            className={`px-5 py-2.5 rounded-2xl font-black text-sm transition ${
               activeTab === 'quizzes'
                 ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            <Award className="w-5 h-5 shrink-0" /> Kuis Interaktif
+            🎮 Kuis & Game Interaktif
           </button>
         </div>
 
-        {canManage && (
-          <div className="shrink-0">
-            {activeTab === 'learning' ? (
+        {activeTab === 'learning' && (
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              className="px-4 py-2.5 border border-slate-300 rounded-xl bg-slate-50 font-bold text-slate-700 text-xs sm:text-sm"
+            >
+              <option value="all">Semua Level</option>
+              <option value="Pra Membaca">Pra Membaca</option>
+              <option value="Level 1">Level 1</option>
+              <option value="Level 2">Level 2</option>
+              <option value="Level 3">Level 3</option>
+              <option value="Level 4">Level 4</option>
+              <option value="Level 5">Level 5</option>
+            </select>
+
+            {canManage && (
               <button
                 onClick={handleOpenAddCourse}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-teal-700 hover:bg-teal-800 text-white text-sm font-black rounded-2xl shadow-md transition"
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-black rounded-xl shadow-sm transition whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" /> + Tambah Modul Materi
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsQuizModalOpen(true)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-purple-700 hover:bg-purple-800 text-white text-sm font-black rounded-2xl shadow-md transition"
-              >
-                <Plus className="w-4 h-4" /> + Buat Kuis Interaktif
+                <Plus className="w-4 h-4" /> + Modul
               </button>
             )}
           </div>
@@ -306,57 +408,68 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
           <div className="space-y-4">
             <h2 className="text-xl font-black text-slate-900 flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <BookOpen className="w-6 h-6 text-teal-600" /> Daftar Modul
+                <BookOpen className="w-6 h-6 text-teal-600" /> Daftar Modul Video
               </span>
-              <span className="text-xs font-bold text-slate-500">{coursesList.length} Modul</span>
+              <span className="text-xs font-bold text-slate-500">{filteredCourses.length} Modul</span>
             </h2>
 
-            <div className="space-y-4">
-              {coursesList.map((course) => (
-                <div
-                  key={course.id}
-                  onClick={() => setActiveCourseId(course.id)}
-                  className={`p-5 rounded-3xl border cursor-pointer transition duration-200 relative group ${
-                    activeCourseId === course.id
-                      ? 'bg-teal-50/90 border-teal-500 shadow-md ring-2 ring-teal-500/20'
-                      : 'bg-white border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex gap-4">
-                    <SafeImage
-                      src={course.thumbnail || course.thumbnail_url}
-                      alt={course.title}
-                      className="w-20 h-20 rounded-2xl object-cover shrink-0"
-                    />
-                    <div className="flex-1 min-w-0 pr-8">
-                      <span className="text-xs font-extrabold uppercase text-teal-800 bg-teal-100/90 px-2.5 py-0.5 rounded-md">
-                        {course.category}
-                      </span>
-                      <h3 className="font-black text-slate-900 text-base truncate mt-1.5">{course.title}</h3>
-                      <p className="text-sm text-slate-600 line-clamp-2 mt-1 font-medium">{course.description}</p>
-                    </div>
-                  </div>
-
-                  {canManage && (
-                    <div className="absolute top-4 right-4 flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition">
-                      <button
-                        onClick={(e) => handleOpenEditCourse(course, e)}
-                        className="p-1.5 bg-white text-teal-700 hover:bg-teal-100 rounded-lg shadow-sm border border-slate-200"
-                        title="Edit Modul"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteCourse(course.id, course.title, e)}
-                        className="p-1.5 bg-white text-rose-600 hover:bg-rose-100 rounded-lg shadow-sm border border-slate-200"
-                        title="Hapus Modul"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
+            <div className="space-y-4 max-h-[650px] overflow-y-auto pr-1">
+              {filteredCourses.length === 0 ? (
+                <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500 text-sm">
+                  Tidak ada modul untuk filter ini.
                 </div>
-              ))}
+              ) : (
+                filteredCourses.map((course) => (
+                  <div
+                    key={course.id}
+                    onClick={() => setActiveCourseId(course.id)}
+                    className={`p-4 sm:p-5 rounded-3xl border cursor-pointer transition duration-200 relative group ${
+                      activeCourseId === course.id
+                        ? 'bg-teal-50/90 border-teal-500 shadow-md ring-2 ring-teal-500/20'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex gap-4">
+                      <SafeImage
+                        src={course.thumbnail || course.thumbnail_url}
+                        alt={course.title}
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shrink-0"
+                      />
+                      <div className="flex-1 min-w-0 pr-8">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-extrabold uppercase text-teal-800 bg-teal-100 px-2 py-0.5 rounded">
+                            {course.category}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                            {course.level || 'Level 1'}
+                          </span>
+                        </div>
+                        <h3 className="font-black text-slate-900 text-sm sm:text-base truncate mt-1">{course.title}</h3>
+                        <p className="text-xs text-slate-600 line-clamp-2 mt-0.5 font-medium">{course.description}</p>
+                      </div>
+                    </div>
+
+                    {canManage && (
+                      <div className="absolute top-3 right-3 flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition">
+                        <button
+                          onClick={(e) => handleOpenEditCourse(course, e)}
+                          className="p-1.5 bg-white text-teal-700 hover:bg-teal-100 rounded-lg shadow-sm border border-slate-200"
+                          title="Edit Modul"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteCourse(course.id, course.title, e)}
+                          className="p-1.5 bg-white text-rose-600 hover:bg-rose-100 rounded-lg shadow-sm border border-slate-200"
+                          title="Hapus Modul"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -365,11 +478,14 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                  <span className="text-xs font-black text-teal-600 uppercase tracking-wider">{currentCourseObj.category}</span>
-                  <h2 className="text-2xl font-black text-slate-900 mt-1">{currentCourseObj.title}</h2>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-teal-600 uppercase tracking-wider">{currentCourseObj.category}</span>
+                    <span className="text-xs font-bold text-slate-400">• {currentCourseObj.level || 'Level 1'}</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">{currentCourseObj.title}</h2>
                 </div>
-                <span className="px-3.5 py-1.5 text-xs font-black bg-amber-100 text-amber-800 rounded-full flex items-center gap-1.5 border border-amber-200">
-                  <Star className="w-4 h-4 fill-amber-500 text-amber-500" /> Badge Reward
+                <span className="px-3.5 py-1.5 text-xs font-black bg-amber-100 text-amber-800 rounded-full flex items-center gap-1.5 border border-amber-200 shrink-0">
+                  <Star className="w-4 h-4 fill-amber-500 text-amber-500" /> Badge Belajar
                 </span>
               </div>
 
@@ -384,91 +500,97 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
               </div>
 
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                <h4 className="font-extrabold text-slate-900 text-base">Deskripsi Modul Pembelajaran:</h4>
+                <h4 className="font-extrabold text-slate-900 text-base">Deskripsi & Panduan Pembelajaran:</h4>
                 <p className="text-slate-600 text-sm font-medium leading-relaxed">{currentCourseObj.description}</p>
               </div>
             </div>
           </div>
-          {/* TAB CONTENT 2: KUIS & GAMES INTERAKTIF */}
-          {activeTab === 'quizzes' && (
-            <div className="space-y-6">
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900">Kuis & Challenge Isyarat Interaktif</h2>
-                    <p className="text-slate-600 text-sm font-medium mt-1">Uji pemahaman anak dengan kuis menyenangkan bertabur XP bonus</p>
-                  </div>
-                  <span className="px-4 py-2 bg-purple-100 text-purple-800 font-extrabold text-xs rounded-xl border border-purple-200 shrink-0">
-                    🎮 Total Kuis: {quizzesList.length > 0 ? quizzesList.length : 1}
-                  </span>
-                </div>
+        </div>
+      )}
 
-                {/* Dynamic Quizzes List */}
-                <div className="space-y-6 max-w-3xl mx-auto">
-                  {(quizzesList.length > 0 ? quizzesList : [
-                    {
-                      id: 1,
-                      question: 'Gerakan mengepalkan tangan dengan ibu jari tegak di samping melambangkan isyarat huruf apa?',
-                      options: [
-                        { id: 'a', text: 'Huruf A' },
-                        { id: 'b', text: 'Huruf B' },
-                        { id: 'c', text: 'Huruf C' }
-                      ],
-                      xp: 50
-                    }
-                  ]).map((q, idx) => (
-                    <div key={q.id || idx} className="p-5 sm:p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-black text-slate-900 text-base sm:text-lg flex items-center gap-2">
-                          <Award className="w-5 h-5 text-purple-600 shrink-0" /> Kuis Soal #{idx + 1} (+{q.xp || 50} XP)
-                        </h3>
-                        <span className="text-xs font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
-                          Tantangan Harian
-                        </span>
-                      </div>
-
-                      <p className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug">
-                        {q.question}
-                      </p>
-
-                      <form onSubmit={handleQuizSubmit} className="space-y-3">
-                        {(q.options || [
-                          { id: 'a', text: 'Opsi A' },
-                          { id: 'b', text: 'Opsi B' }
-                        ]).map((opt, oIdx) => (
-                          <label
-                            key={opt.id || oIdx}
-                            className={`flex items-center gap-4 p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer text-sm sm:text-base font-bold transition ${
-                              quizAnswer === `${q.id}-${opt.id || opt.text}`
-                                ? 'bg-purple-600 text-white border-purple-600 shadow-md'
-                                : 'bg-white text-slate-800 border-slate-200 hover:bg-purple-50'
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name={`quiz-${q.id}`}
-                              value={`${q.id}-${opt.id || opt.text}`}
-                              checked={quizAnswer === `${q.id}-${opt.id || opt.text}`}
-                              onChange={() => setQuizAnswer(`${q.id}-${opt.id || opt.text}`)}
-                              className="hidden"
-                            />
-                            <span>{opt.text}</span>
-                          </label>
-                        ))}
-
-                        <button
-                          type="submit"
-                          className="w-full py-3.5 mt-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-base rounded-2xl shadow-lg shadow-purple-600/30 transition"
-                        >
-                          Jawab & Klaim XP
-                        </button>
-                      </form>
-                    </div>
-                  ))}
-                </div>
+      {/* TAB CONTENT 2: KUIS & GAMES INTERAKTIF */}
+      {activeTab === 'quizzes' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900">Kuis & Challenge Interaktif</h2>
+                <p className="text-slate-600 text-sm font-medium mt-1">Uji pemahaman anak dengan kuis menyenangkan bertabur XP bonus</p>
               </div>
+              {canManage && (
+                <button
+                  onClick={() => setIsQuizModalOpen(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-black rounded-xl shadow-md transition"
+                >
+                  <Plus className="w-4 h-4" /> + Buat Kuis Baru
+                </button>
+              )}
             </div>
-          )}
+
+            {/* Dynamic Quizzes List */}
+            <div className="space-y-6 max-w-3xl mx-auto">
+              {(quizzesList.length > 0 ? quizzesList : [
+                {
+                  id: 1,
+                  question: 'Gerakan mengepalkan tangan dengan ibu jari tegak di samping melambangkan isyarat huruf apa?',
+                  options: [
+                    { id: 'a', text: 'Huruf A' },
+                    { id: 'b', text: 'Huruf B' },
+                    { id: 'c', text: 'Huruf C' }
+                  ],
+                  xp: 50
+                }
+              ]).map((q, idx) => (
+                <div key={q.id || idx} className="p-5 sm:p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-black text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                      <Award className="w-5 h-5 text-purple-600 shrink-0" /> Kuis Soal #{idx + 1} (+{q.xp || 50} XP)
+                    </h3>
+                    <span className="text-xs font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                      Tantangan Harian
+                    </span>
+                  </div>
+
+                  <p className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug">
+                    {q.question}
+                  </p>
+
+                  <form onSubmit={handleQuizSubmit} className="space-y-3">
+                    {(q.options || [
+                      { id: 'a', text: 'Opsi A' },
+                      { id: 'b', text: 'Opsi B' }
+                    ]).map((opt, oIdx) => (
+                      <label
+                        key={opt.id || oIdx}
+                        className={`flex items-center gap-4 p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer text-sm sm:text-base font-bold transition ${
+                          quizAnswer === `${q.id}-${opt.id || opt.text}`
+                            ? 'bg-purple-600 text-white border-purple-600 shadow-md'
+                            : 'bg-white text-slate-800 border-slate-200 hover:bg-purple-50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`quiz-${q.id}`}
+                          value={`${q.id}-${opt.id || opt.text}`}
+                          checked={quizAnswer === `${q.id}-${opt.id || opt.text}`}
+                          onChange={() => setQuizAnswer(`${q.id}-${opt.id || opt.text}`)}
+                          className="hidden"
+                        />
+                        <span>{opt.text}</span>
+                      </label>
+                    ))}
+
+                    <button
+                      type="submit"
+                      className="w-full py-3.5 mt-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-base rounded-2xl shadow-lg shadow-purple-600/30 transition"
+                    >
+                      Jawab & Klaim XP
+                    </button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -484,25 +606,43 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             <input
               type="text"
               required
-              placeholder="Contoh: Isyarat Kata Kerja Sehari-hari"
+              placeholder="Contoh: Alfabet Isyarat (A - Z)"
               value={courseFormData.title}
               onChange={(e) => setCourseFormData({ ...courseFormData, title: e.target.value })}
               className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-600 font-medium"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori Materi</label>
-            <select
-              value={courseFormData.category}
-              onChange={(e) => setCourseFormData({ ...courseFormData, category: e.target.value })}
-              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
-            >
-              <option value="Bahasa Isyarat">Bahasa Isyarat</option>
-              <option value="Bahasa Indonesia">Bahasa Indonesia</option>
-              <option value="Story Telling">Story Telling</option>
-              <option value="Life Skill">Life Skill</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori Materi</label>
+              <select
+                value={courseFormData.category}
+                onChange={(e) => setCourseFormData({ ...courseFormData, category: e.target.value })}
+                className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+              >
+                <option value="Bahasa Isyarat">Bahasa Isyarat</option>
+                <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                <option value="Story Telling">Story Telling</option>
+                <option value="Life Skill">Life Skill</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Level</label>
+              <select
+                value={courseFormData.level}
+                onChange={(e) => setCourseFormData({ ...courseFormData, level: e.target.value })}
+                className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+              >
+                <option value="Pra Membaca">Pra Membaca</option>
+                <option value="Level 1">Level 1</option>
+                <option value="Level 2">Level 2</option>
+                <option value="Level 3">Level 3</option>
+                <option value="Level 4">Level 4</option>
+                <option value="Level 5">Level 5</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -619,4 +759,5 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
     </div>
   );
 }
+
 
