@@ -1,22 +1,13 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import {
-  Sparkles, BookOpen, GraduationCap, Users, ArrowRight, CheckCircle2,
-  Zap, PlayCircle, Menu, X, Search, FileText, Heart, ShieldCheck
+  Sparkles, BookOpen, ArrowRight, CheckCircle2,
+  Menu, X
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export function LandingPage() {
-  const navigate = useNavigate();
-  const { loginAsRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleQuickDemo = (roleKey) => {
-    loginAsRole(roleKey);
-    setIsMobileMenuOpen(false);
-    navigate('/dashboard');
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-500 selection:text-white">
@@ -39,12 +30,6 @@ export function LandingPage() {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => handleQuickDemo('teacher')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-teal-600 text-teal-700 font-extrabold text-sm hover:bg-teal-50 transition shadow-xs"
-            >
-              <Zap className="w-4 h-4 text-teal-600" /> Akses Guru
-            </button>
             <Link
               to="/login"
               className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-sm shadow-lg shadow-teal-600/30 hover:shadow-teal-600/40 transition flex items-center gap-2"
@@ -106,12 +91,6 @@ export function LandingPage() {
             </nav>
 
             <div className="flex flex-col gap-2.5 pt-1">
-              <button
-                onClick={() => handleQuickDemo('teacher')}
-                className="w-full py-3 rounded-xl border-2 border-teal-600 text-teal-700 font-black text-sm flex items-center justify-center gap-2 bg-teal-50/50"
-              >
-                <Zap className="w-4 h-4 text-teal-600" /> Coba Akses Guru
-              </button>
               <Link
                 to="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -150,12 +129,12 @@ export function LandingPage() {
               >
                 Masuk ke Aplikasi <ArrowRight className="w-5 h-5" />
               </Link>
-              <button
-                onClick={() => handleQuickDemo('parent')}
+              <a
+                href="#kurikulum"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-800 font-bold text-lg shadow-md hover:border-teal-300 transition flex items-center justify-center gap-2"
               >
-                <PlayCircle className="w-5 h-5 text-teal-600" /> Masuk Sebagai Orang Tua
-              </button>
+                <BookOpen className="w-5 h-5 text-teal-600" /> Pelajari Kurikulum
+              </a>
             </div>
           </div>
 
@@ -277,12 +256,12 @@ export function LandingPage() {
                   Ketik kata apa saja (contoh: Ayam, Ibu, Makan) langsung muncul kartu gambar isyaratnya!
                 </p>
               </div>
-              <button
-                onClick={() => handleQuickDemo('teacher')}
+              <Link
+                to="/login"
                 className="w-full py-2.5 bg-teal-600 text-white font-extrabold rounded-xl hover:bg-teal-700 transition text-sm flex items-center justify-center gap-2"
               >
-                Coba Kamus Gambar <ArrowRight className="w-4 h-4" />
-              </button>
+                Akses Kamus Gambar <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
