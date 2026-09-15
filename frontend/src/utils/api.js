@@ -6,17 +6,21 @@ const defaultBaseURL = typeof window !== 'undefined' && (window.location.hostnam
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
-// Add request interceptor for JWT Auth token
+// Add request interceptor for JWT Auth token & auto Content-Type
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Let axios auto-detect Content-Type for FormData (multipart/form-data)
+  // Only set application/json for non-FormData requests
+  if (!(config.data instanceof FormData)) {
+    config.headers["Content-Type"] = "application/json";
+  }
+
   return config;
 }, (error) => {
   return Promise.reject(error);
