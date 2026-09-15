@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   Sparkles, BookOpen, ArrowRight, CheckCircle2,
-  Menu, X
+  Menu, X, LayoutDashboard
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  const targetPath = isAuthenticated ? '/dashboard' : '/login';
+  const navBtnText = isAuthenticated ? 'Buka Dashboard' : 'Masuk / Login';
+  const ctaBtnText = isAuthenticated ? 'Buka Dashboard' : 'Masuk ke Aplikasi';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-500 selection:text-white">
@@ -31,20 +37,21 @@ export function LandingPage() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link
-              to="/login"
+              to={targetPath}
               className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-sm shadow-lg shadow-teal-600/30 hover:shadow-teal-600/40 transition flex items-center gap-2"
             >
-              Masuk / Login <ArrowRight className="w-4 h-4" />
+              {isAuthenticated && <LayoutDashboard className="w-4 h-4" />}
+              {navBtnText} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           {/* Mobile Hamburger Toggle Button */}
           <div className="flex items-center gap-2 md:hidden">
             <Link
-              to="/login"
+              to={targetPath}
               className="px-3.5 py-2 rounded-xl bg-teal-600 text-white font-extrabold text-xs shadow-md flex items-center gap-1"
             >
-              Masuk
+              {isAuthenticated ? 'Dashboard' : 'Masuk'}
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -92,11 +99,11 @@ export function LandingPage() {
 
             <div className="flex flex-col gap-2.5 pt-1">
               <Link
-                to="/login"
+                to={targetPath}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2"
               >
-                Masuk ke Aplikasi <ArrowRight className="w-4 h-4" />
+                {ctaBtnText} <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -124,10 +131,10 @@ export function LandingPage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link
-                to="/login"
+                to={targetPath}
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-lg shadow-xl shadow-teal-600/30 hover:scale-[1.02] transition flex items-center justify-center gap-3"
               >
-                Masuk ke Aplikasi <ArrowRight className="w-5 h-5" />
+                {ctaBtnText} <ArrowRight className="w-5 h-5" />
               </Link>
               <a
                 href="#kurikulum"
@@ -257,7 +264,7 @@ export function LandingPage() {
                 </p>
               </div>
               <Link
-                to="/login"
+                to={isAuthenticated ? '/sign-dictionary' : '/login'}
                 className="w-full py-2.5 bg-teal-600 text-white font-extrabold rounded-xl hover:bg-teal-700 transition text-sm flex items-center justify-center gap-2"
               >
                 Akses Kamus Gambar <ArrowRight className="w-4 h-4" />
@@ -331,7 +338,7 @@ export function LandingPage() {
 
             <div className="shrink-0">
               <Link
-                to="/login"
+                to={isAuthenticated ? '/library' : '/login'}
                 className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-base sm:text-lg rounded-2xl shadow-xl transition inline-flex items-center gap-2"
               >
                 Masuk ke Library <ArrowRight className="w-5 h-5" />

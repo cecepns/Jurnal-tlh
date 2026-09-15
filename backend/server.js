@@ -887,6 +887,71 @@ app.post('/api/dictionary', async (req, res) => {
   }
 });
 
+app.put('/api/dictionary/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { word, category = 'umum', level = 'Level 1', image_url, illustration_url, video_url, description = '', tags = [] } = req.body;
+
+  if (!word) {
+    return res.status(400).json({ success: false, message: 'Kata isyarat wajib diisi!' });
+  }
+
+  try {
+    const formattedTags = JSON.stringify(Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : [word.toLowerCase()]));
+
+    try {
+      await dbPool.query(
+        'UPDATE dictionary_items SET word = ?, category = ?, level = ?, image_url = ?, illustration_url = ?, video_url = ?, description = ?, tags = ? WHERE id = ?',
+        [
+          word,
+          category,
+          level,
+          image_url || video_url || null,
+          illustration_url || image_url || null,
+          video_url || null,
+          description,
+          formattedTags,
+          id
+        ]
+      );
+    } catch (colErr) {
+      // Fallback if video_url column is not present
+      await dbPool.query(
+        'UPDATE dictionary_items SET word = ?, category = ?, level = ?, image_url = ?, illustration_url = ?, description = ?, tags = ? WHERE id = ?',
+        [
+          word,
+          category,
+          level,
+          image_url || video_url || null,
+          illustration_url || image_url || null,
+          description,
+          formattedTags,
+          id
+        ]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: `Kata isyarat "${word}" berhasil diperbarui!`,
+      data: { id, word, category, level, image_url: image_url || video_url, video_url, description, tags }
+    });
+  } catch (err) {
+    console.error('MySQL update dictionary error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal memperbarui data kata isyarat' });
+  }
+});
+
+app.delete('/api/dictionary/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await dbPool.query('DELETE FROM dictionary_items WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Kata isyarat berhasil dihapus dari database' });
+  } catch (err) {
+    console.error('MySQL delete dictionary error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal menghapus kata isyarat dari database' });
+  }
+});
+
 // ==========================================
 // 2. DIGITAL LIBRARY API (Real Database MySQL)
 // ==========================================
@@ -943,6 +1008,30 @@ app.post('/api/library', async (req, res) => {
   } catch (err) {
     console.error('MySQL insert library error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal menyimpan bahan ajar ke database' });
+  }
+});
+
+app.put('/api/library/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { title, type = 'buku_bacaan', category = 'Bahasa Indonesia', level = 'Level 1', file_url, thumbnail_url, description = '', total_pages = 10, file_size = '2.0 MB' } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ success: false, message: 'Judul bahan ajar wajib diisi!' });
+  }
+
+  try {
+    await dbPool.query(
+      'UPDATE library_items SET title = ?, type = ?, category = ?, level = ?, file_url = ?, thumbnail_url = ?, description = ?, total_pages = ?, file_size = ? WHERE id = ?',
+      [title, type, category, level, file_url, thumbnail_url || null, description, total_pages, file_size, id]
+    );
+    res.json({
+      success: true,
+      message: `Bahan ajar "${title}" berhasil diperbarui!`,
+      data: { id, title, type, category, level, file_url, thumbnail_url, description, total_pages, file_size }
+    });
+  } catch (err) {
+    console.error('MySQL update library error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal memperbarui data bahan ajar' });
   }
 });
 

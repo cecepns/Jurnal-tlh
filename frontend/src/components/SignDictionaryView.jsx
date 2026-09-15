@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, Plus, Sparkles, BookOpen, Volume2, Eye, Filter, CheckCircle2, 
-  ArrowRight, UploadCloud, Video, Play, Loader2, X, Image as ImageIcon, Film
+  ArrowRight, UploadCloud, Video, Play, Loader2, X, Image as ImageIcon, Film,
+  Pencil, Trash2
 } from 'lucide-react';
 import { SafeImage } from './SafeImage';
 import { request } from '../utils/request';
@@ -34,6 +35,25 @@ export function SignDictionaryView() {
   const mediaInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
+    word: '',
+    category: 'alfabet',
+    level: 'Level 1',
+    image_url: '',
+    video_url: '',
+    description: '',
+    tags: ''
+  });
+
+  // Modal Edit Item
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [uploadingEditMedia, setUploadingEditMedia] = useState(false);
+  const [uploadedEditMediaInfo, setUploadedEditMediaInfo] = useState(null);
+  const [isEditDragging, setIsEditDragging] = useState(false);
+  const [showEditManualLink, setShowEditManualLink] = useState(false);
+  const editMediaInputRef = useRef(null);
+
+  const [editFormData, setEditFormData] = useState({
     word: '',
     category: 'alfabet',
     level: 'Level 1',
@@ -146,6 +166,141 @@ export function SignDictionaryView() {
     } catch (err) {
       toast.error('Gagal menambahkan kata isyarat');
     }
+  };
+
+  const handleOpenEdit = (item, e) => {
+    if (e) e.stopPropagation();
+    setEditingItem(item);
+    setEditFormData({
+      word: item.word || '',
+      category: item.category || 'alfabet',
+      level: item.level || 'Level 1',
+      image_url: item.image_url || '',
+      video_url: item.video_url || '',
+      description: item.description || '',
+      tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || '')
+    });
+    setUploadedEditMediaInfo(null);
+    setShowEditManualLink(false);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditMediaSelect = async (file) => {
+    if (!file) return;
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name);
+    const sizeStr = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+      : `${Math.round(file.size / 1024)} KB`;
+
+    setUploadingEditMedia(true);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+
+    try {
+      const res = await request.post(API_ENDPOINTS.UPLOADS.UPLOAD_FILE, uploadData);
+      if (res.success && res.data) {
+        const fileUrl = res.data.url;
+        setEditFormData(prev => ({
+          ...prev,
+          image_url: fileUrl,
+          video_url: isVideo ? fileUrl : (prev.video_url || '')
+        }));
+        setUploadedEditMediaInfo({
+          name: file.name,
+          size: sizeStr,
+          type: isVideo ? 'video' : 'image',
+          url: fileUrl
+        });
+        toast.success(`🎉 ${isVideo ? 'Video MP4 isyarat baru' : 'Foto gerakan baru'} berhasil diunggah!`);
+      } else {
+        toast.error(res.message || 'Gagal mengunggah file media');
+      }
+    } catch (err) {
+      console.error('Media upload error:', err);
+      toast.error(err.response?.data?.message || 'Gagal mengunggah file media ke server');
+    } finally {
+      setUploadingEditMedia(false);
+    }
+  };
+
+  const handleUpdateItem = async (e) => {
+    e.preventDefault();
+    if (!editFormData.word) {
+      toast.error('Kata / kosakata isyarat wajib diisi!');
+      return;
+    }
+    if (!editFormData.image_url && !editFormData.video_url) {
+      toast.error('Silakan upload foto gerakan atau video isyarat terlebih dahulu!');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...editFormData,
+        image_url: editFormData.image_url || editFormData.video_url || null,
+        video_url: editFormData.video_url || null,
+        tags: editFormData.tags ? editFormData.tags.split(',').map(t => t.trim()) : [editFormData.word.toLowerCase()]
+      };
+      const res = await request.put(API_ENDPOINTS.DICTIONARY.UPDATE(editingItem.id), payload);
+      if (res.success) {
+        toast.success(`🎉 Kata isyarat "${editFormData.word}" berhasil diperbarui!`);
+        setIsEditModalOpen(false);
+        setEditingItem(null);
+        if (selectedItem?.id === editingItem.id) {
+          setSelectedItem(prev => ({ ...prev, ...payload }));
+        }
+        fetchDictionary();
+      } else {
+        toast.error(res.message || 'Gagal memperbarui kata isyarat');
+      }
+    } catch (err) {
+      toast.error('Gagal memperbarui kata isyarat');
+    }
+  };
+
+  const handleDelete = (item, e) => {
+    if (e) e.stopPropagation();
+    toast((t) => (
+      <div className="flex flex-col gap-3 p-1">
+        <div className="flex items-center gap-2 text-rose-600 font-bold">
+          <Trash2 className="w-5 h-5 shrink-0" />
+          <span>Hapus Kata Isyarat?</span>
+        </div>
+        <p className="text-xs text-slate-600 font-medium">
+          Apakah Anda yakin ingin menghapus <strong>"{item.word}"</strong> dari Kamus Isyarat?
+        </p>
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-slate-300 hover:bg-slate-50 transition"
+          >
+            Batal
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                const res = await request.delete(API_ENDPOINTS.DICTIONARY.DELETE(item.id));
+                if (res.success) {
+                  toast.success(`Kata "${item.word}" berhasil dihapus.`);
+                  if (selectedItem?.id === item.id) {
+                    setIsDetailModalOpen(false);
+                  }
+                  fetchDictionary();
+                } else {
+                  toast.error(res.message || 'Gagal menghapus');
+                }
+              } catch (err) {
+                toast.error('Gagal menghapus kata isyarat');
+              }
+            }}
+            className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition"
+          >
+            Ya, Hapus
+          </button>
+        </div>
+      </div>
+    ), { duration: 6000 });
   };
 
   const categories = [
@@ -298,8 +453,31 @@ export function SignDictionaryView() {
                       </>
                     )}
 
-                    <div className="absolute top-3 right-3 bg-teal-600 text-white p-2 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition">
-                      <Eye className="w-4 h-4" />
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                      {canManage ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenEdit(item, e)}
+                            className="p-2 bg-white/95 text-amber-600 hover:bg-amber-500 hover:text-white rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition"
+                            title="Edit Kata Isyarat"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDelete(item, e)}
+                            className="p-2 bg-white/95 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition"
+                            title="Hapus Kata Isyarat"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="bg-teal-600 text-white p-2 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition">
+                          <Eye className="w-4 h-4" />
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -375,8 +553,31 @@ export function SignDictionaryView() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                {canManage ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsDetailModalOpen(false);
+                        handleOpenEdit(selectedItem);
+                      }}
+                      className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl shadow-sm transition flex items-center gap-1.5"
+                    >
+                      <Pencil className="w-4 h-4" /> Edit Kata
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(selectedItem)}
+                      className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-sm rounded-xl border border-rose-200 transition flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-4 h-4" /> Hapus
+                    </button>
+                  </div>
+                ) : <div />}
+
                 <button
+                  type="button"
                   onClick={() => setIsDetailModalOpen(false)}
                   className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition"
                 >
@@ -593,6 +794,213 @@ export function SignDictionaryView() {
               className="px-6 py-2.5 text-sm font-extrabold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl shadow-md transition"
             >
               Simpan ke Kamus
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Edit Kata Isyarat */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={`Edit Kata Isyarat: ${editingItem?.word || ''}`}
+      >
+        <form onSubmit={handleUpdateItem} className="space-y-4">
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kata / Kosakata *</label>
+            <input
+              type="text"
+              required
+              placeholder="Contoh: Ayam, Kucing, Ayah, Huruf C"
+              value={editFormData.word}
+              onChange={(e) => setEditFormData({ ...editFormData, word: e.target.value })}
+              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-teal-600 font-medium"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori</label>
+              <select
+                value={editFormData.category}
+                onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                className="w-full px-4 py-3 border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+              >
+                <option value="alfabet">Alfabet Isyarat</option>
+                <option value="angka">Angka Isyarat</option>
+                <option value="siapa_aku">Siapa Aku</option>
+                <option value="keluarga">Keluarga</option>
+                <option value="rumah_tinggal">Rumah Tinggal</option>
+                <option value="hobi">Hobi</option>
+                <option value="makanan_minuman">Makanan & Minuman</option>
+                <option value="hewan">Hewan</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Level</label>
+              <select
+                value={editFormData.level}
+                onChange={(e) => setEditFormData({ ...editFormData, level: e.target.value })}
+                className="w-full px-4 py-3 border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+              >
+                <option value="Level 1">Level 1</option>
+                <option value="Level 2">Level 2</option>
+                <option value="Level 3">Level 3</option>
+                <option value="Level 4">Level 4</option>
+                <option value="Level 5">Level 5</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Media Uploader in Edit */}
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">
+              File Foto atau Video Gerakan Isyarat (MP4) *
+            </label>
+
+            <input
+              ref={editMediaInputRef}
+              type="file"
+              accept="image/*,video/mp4,video/webm,.mp4,.webm"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleEditMediaSelect(e.target.files[0]);
+                }
+              }}
+              className="hidden"
+            />
+
+            {uploadingEditMedia ? (
+              <div className="border-2 border-dashed border-teal-400 rounded-3xl p-8 text-center bg-teal-50/60 flex flex-col items-center justify-center space-y-3">
+                <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+                <p className="text-base font-black text-slate-800">Sedang mengunggah file media baru...</p>
+                <p className="text-xs text-slate-500">Mendukung video MP4 hingga 200MB.</p>
+              </div>
+            ) : (editFormData.video_url || editFormData.image_url) ? (
+              <div className="border-2 border-teal-400 bg-teal-50/70 rounded-3xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-teal-800 font-extrabold text-xs">
+                    <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
+                    <span>{editFormData.video_url ? 'Video MP4 Gerakan Tersedia' : 'Foto Gerakan Tersedia'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => editMediaInputRef.current?.click()}
+                    className="px-3 py-1 text-xs font-bold text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-xl transition"
+                  >
+                    Ganti Media
+                  </button>
+                </div>
+
+                {/* Preview media */}
+                <div className="rounded-2xl overflow-hidden border border-teal-200 bg-slate-900 max-h-48 flex items-center justify-center">
+                  {editFormData.video_url || /\.(mp4|webm)$/i.test(editFormData.image_url) ? (
+                    <video
+                      controls
+                      src={getUploadUrl(editFormData.video_url || editFormData.image_url)}
+                      className="w-full max-h-48 object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={getUploadUrl(editFormData.image_url)}
+                      alt="Preview"
+                      className="w-full max-h-48 object-cover"
+                    />
+                  )}
+                </div>
+                {uploadedEditMediaInfo && (
+                  <p className="text-xs text-slate-500 font-medium">
+                    File Baru: <span className="font-bold text-slate-700">{uploadedEditMediaInfo.name}</span> ({uploadedEditMediaInfo.size})
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div
+                onClick={() => editMediaInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsEditDragging(true); }}
+                onDragLeave={() => setIsEditDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsEditDragging(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleEditMediaSelect(e.dataTransfer.files[0]);
+                  }
+                }}
+                className={`border-2 border-dashed rounded-3xl p-7 text-center cursor-pointer transition flex flex-col items-center justify-center group ${
+                  isEditDragging 
+                    ? 'border-teal-600 bg-teal-50/80 scale-[1.01]' 
+                    : 'border-teal-300 bg-teal-50/40 hover:bg-teal-50/80 hover:border-teal-500'
+                }`}
+              >
+                <div className="w-14 h-14 bg-teal-100 group-hover:bg-teal-200 text-teal-700 rounded-2xl flex items-center justify-center mb-3 transition shadow-xs">
+                  <UploadCloud className="w-8 h-8" />
+                </div>
+                <p className="text-base font-black text-slate-900">
+                  Tarik & Lepas File Baru ke Sini, atau <span className="text-teal-600 underline">Klik untuk Pilih File</span>
+                </p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">
+                  Mendukung: <span className="font-bold text-slate-700">Video MP4, WEBM</span> atau <span className="font-bold text-slate-700">Foto JPG, PNG, WEBP</span>
+                </p>
+              </div>
+            )}
+
+            {/* Manual Link Input Toggle in Edit */}
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setShowEditManualLink(!showEditManualLink)}
+                className="text-xs font-bold text-slate-500 hover:text-teal-600 underline"
+              >
+                {showEditManualLink ? 'Tutup input URL manual' : 'Atau ubah URL link langsung'}
+              </button>
+            </div>
+
+            {showEditManualLink && (
+              <div className="mt-2 space-y-2">
+                <input
+                  type="text"
+                  placeholder="URL Gambar: https://..."
+                  value={editFormData.image_url}
+                  onChange={(e) => setEditFormData({ ...editFormData, image_url: e.target.value })}
+                  className="w-full px-4 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 font-medium"
+                />
+                <input
+                  type="text"
+                  placeholder="URL Video MP4: https://.../video.mp4"
+                  value={editFormData.video_url}
+                  onChange={(e) => setEditFormData({ ...editFormData, video_url: e.target.value })}
+                  className="w-full px-4 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 font-medium"
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Deskripsi / Panduan Gerakan Tangan</label>
+            <textarea
+              rows={2}
+              placeholder="Jelaskan bentuk jari, tangan, dan posisi gerakan..."
+              value={editFormData.description}
+              onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-teal-600 font-medium text-sm"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-5 py-2.5 text-sm font-bold text-slate-600 rounded-xl hover:bg-slate-100"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={uploadingEditMedia || (!editFormData.image_url && !editFormData.video_url)}
+              className="px-6 py-2.5 text-sm font-extrabold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl shadow-md transition"
+            >
+              Simpan Perubahan
             </button>
           </div>
         </form>

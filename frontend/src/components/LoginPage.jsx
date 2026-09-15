@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Lock, Mail, ArrowRight, CheckCircle2,
@@ -10,11 +10,16 @@ import toast from 'react-hot-toast';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { loginWithApi } = useAuth();
+  const { loginWithApi, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // If already authenticated, directly redirect to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +32,7 @@ export function LoginPage() {
     try {
       const loggedUser = await loginWithApi({ email, password });
       toast.success(`🎉 Berhasil masuk sebagai ${loggedUser.name}!`);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       toast.error(err.message || 'Gagal login via API.');
     } finally {

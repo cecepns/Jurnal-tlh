@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, Plus, FileText, Download, BookOpen, Presentation, Sparkles, 
   Eye, Trash2, Filter, UploadCloud, CheckCircle2, File, Image as ImageIcon,
-  Loader2, X, ExternalLink
+  Loader2, X, ExternalLink, Pencil
 } from 'lucide-react';
 import { SafeImage } from './SafeImage';
 import { request } from '../utils/request';
@@ -37,6 +37,29 @@ export function DigitalLibraryView() {
   const thumbInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
+    title: '',
+    type: 'buku_bacaan',
+    category: 'Bahasa Indonesia',
+    level: 'Pra Membaca',
+    file_url: '',
+    thumbnail_url: '',
+    description: '',
+    total_pages: 10,
+    file_size: '2.5 MB'
+  });
+
+  // Modal Edit Document
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
+  const [uploadingEditFile, setUploadingEditFile] = useState(false);
+  const [uploadingEditThumbnail, setUploadingEditThumbnail] = useState(false);
+  const [uploadedEditFileInfo, setUploadedEditFileInfo] = useState(null);
+  const [isEditDragging, setIsEditDragging] = useState(false);
+  const [showEditManualUrl, setShowEditManualUrl] = useState(false);
+  const editFileInputRef = useRef(null);
+  const editThumbInputRef = useRef(null);
+
+  const [editFormData, setEditFormData] = useState({
     title: '',
     type: 'buku_bacaan',
     category: 'Bahasa Indonesia',
@@ -197,7 +220,7 @@ export function DigitalLibraryView() {
   };
 
   const handleDelete = (id, title, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     toast((t) => (
       <div className="flex flex-col gap-3 p-1">
         <p className="font-bold text-slate-800 text-base">Hapus "{title}" dari Library?</p>
@@ -209,6 +232,9 @@ export function DigitalLibraryView() {
               try {
                 await request.delete(API_ENDPOINTS.LIBRARY.DELETE(id));
                 toast.success('Bahan ajar berhasil dihapus.');
+                if (activeDoc?.id === id) {
+                  setIsViewerOpen(false);
+                }
                 fetchLibrary();
               } catch (err) {
                 toast.error('Gagal menghapus materi');
@@ -221,6 +247,124 @@ export function DigitalLibraryView() {
         </div>
       </div>
     ));
+  };
+
+  const handleOpenEdit = (doc, e) => {
+    if (e) e.stopPropagation();
+    setEditingDoc(doc);
+    setEditFormData({
+      title: doc.title || '',
+      type: doc.type || 'buku_bacaan',
+      category: doc.category || 'Bahasa Indonesia',
+      level: doc.level || 'Pra Membaca',
+      file_url: doc.file_url || '',
+      thumbnail_url: doc.thumbnail_url || '',
+      description: doc.description || '',
+      total_pages: doc.total_pages || 10,
+      file_size: doc.file_size || '2.0 MB'
+    });
+    setUploadedEditFileInfo(null);
+    setShowEditManualUrl(false);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditFileSelect = async (file) => {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    const sizeStr = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+      : `${Math.round(file.size / 1024)} KB`;
+
+    let detectedType = editFormData.type;
+    if (['ppt', 'pptx'].includes(ext)) {
+      detectedType = 'ppt_materi';
+    } else if (['doc', 'docx'].includes(ext)) {
+      detectedType = 'worksheet';
+    } else if (['pdf'].includes(ext)) {
+      detectedType = 'buku_bacaan';
+    }
+
+    setUploadingEditFile(true);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+
+    try {
+      const res = await request.post(API_ENDPOINTS.UPLOADS.UPLOAD_FILE, uploadData);
+      if (res.success && res.data) {
+        const fileUrl = res.data.url;
+        setEditFormData(prev => ({
+          ...prev,
+          type: detectedType,
+          file_url: fileUrl,
+          file_size: sizeStr,
+          thumbnail_url: prev.thumbnail_url || (['png', 'jpg', 'jpeg', 'webp'].includes(ext) ? fileUrl : prev.thumbnail_url)
+        }));
+        setUploadedEditFileInfo({
+          name: file.name,
+          size: sizeStr,
+          ext: ext.toUpperCase()
+        });
+        toast.success(`🎉 File baru "${file.name}" berhasil diunggah!`);
+      } else {
+        toast.error(res.message || 'Gagal mengunggah file');
+      }
+    } catch (err) {
+      console.error('File upload error:', err);
+      toast.error(err.response?.data?.message || 'Gagal mengunggah file ke server');
+    } finally {
+      setUploadingEditFile(false);
+    }
+  };
+
+  const handleEditThumbnailSelect = async (file) => {
+    if (!file) return;
+    setUploadingEditThumbnail(true);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    try {
+      const res = await request.post(API_ENDPOINTS.UPLOADS.UPLOAD_FILE, uploadData);
+      if (res.success && res.data) {
+        setEditFormData(prev => ({ ...prev, thumbnail_url: res.data.url }));
+        toast.success('Foto sampul baru berhasil diunggah!');
+      }
+    } catch (err) {
+      toast.error('Gagal mengunggah foto sampul');
+    } finally {
+      setUploadingEditThumbnail(false);
+    }
+  };
+
+  const handleUpdateDoc = async (e) => {
+    e.preventDefault();
+    if (!editFormData.title) {
+      toast.error('Judul bahan ajar wajib diisi!');
+      return;
+    }
+    if (!editFormData.file_url) {
+      toast.error('Silakan upload file dokumen/materi terlebih dahulu!');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...editFormData,
+        thumbnail_url: editFormData.thumbnail_url || null
+      };
+      const res = await request.put(API_ENDPOINTS.LIBRARY.UPDATE(editingDoc.id), payload);
+      if (res.success) {
+        toast.success(`🎉 Bahan ajar "${editFormData.title}" berhasil diperbarui!`);
+        setIsEditModalOpen(false);
+        setEditingDoc(null);
+        if (activeDoc?.id === editingDoc.id) {
+          setActiveDoc(prev => ({ ...prev, ...payload }));
+        }
+        fetchLibrary();
+      } else {
+        toast.error(res.message || 'Gagal memperbarui dokumen');
+      }
+    } catch (err) {
+      toast.error('Gagal memperbarui dokumen');
+    }
   };
 
   const typeLabels = {
@@ -345,13 +489,24 @@ export function DigitalLibraryView() {
                   </div>
 
                   {canManage && (
-                    <button
-                      onClick={(e) => handleDelete(doc.id, doc.title, e)}
-                      className="absolute bottom-3 right-3 p-2 bg-white/90 text-rose-600 rounded-xl shadow-md opacity-0 group-hover:opacity-100 hover:bg-rose-50 transition"
-                      title="Hapus Dokumen"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="absolute bottom-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition z-10">
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenEdit(doc, e)}
+                        className="p-2 bg-white/95 text-amber-600 hover:bg-amber-500 hover:text-white rounded-xl shadow-md transition"
+                        title="Edit Bahan Ajar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(doc.id, doc.title, e)}
+                        className="p-2 bg-white/95 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl shadow-md transition"
+                        title="Hapus Dokumen"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -402,15 +557,38 @@ export function DigitalLibraryView() {
                   <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">{activeDoc.category} • {activeDoc.level}</span>
                   <h4 className="text-base font-black text-slate-900 mt-0.5">{activeDoc.title}</h4>
                 </div>
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  download
-                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition shrink-0"
-                >
-                  <Download className="w-4 h-4" /> Unduh / Download File
-                </a>
+                <div className="flex items-center gap-2">
+                  {canManage && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsViewerOpen(false);
+                          handleOpenEdit(activeDoc);
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-extrabold shadow-sm transition shrink-0"
+                      >
+                        <Pencil className="w-4 h-4" /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(activeDoc.id, activeDoc.title)}
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-extrabold shadow-sm transition shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" /> Hapus
+                      </button>
+                    </>
+                  )}
+                  <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition shrink-0"
+                  >
+                    <Download className="w-4 h-4" /> Unduh File
+                  </a>
+                </div>
               </div>
 
               {/* Multi-Format Preview Display */}
@@ -717,6 +895,248 @@ export function DigitalLibraryView() {
               className="px-6 py-2.5 text-sm font-extrabold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl shadow-md transition"
             >
               Simpan ke Library
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Edit Document */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={`Edit Bahan Ajar: ${editingDoc?.title || ''}`}
+      >
+        <form onSubmit={handleUpdateDoc} className="space-y-5">
+          {/* File Document Uploader */}
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-2">
+              1. File Dokumen / Bahan Ajar *
+            </label>
+
+            <input
+              ref={editFileInputRef}
+              type="file"
+              accept=".pdf,.ppt,.pptx,.doc,.docx,.png,.jpg,.jpeg,.webp"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleEditFileSelect(e.target.files[0]);
+                }
+              }}
+              className="hidden"
+            />
+
+            {uploadingEditFile ? (
+              <div className="border-2 border-dashed border-indigo-400 rounded-3xl p-8 text-center bg-indigo-50/60 flex flex-col items-center justify-center space-y-3">
+                <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+                <p className="text-base font-black text-slate-800">Sedang mengunggah file baru ke server...</p>
+                <p className="text-xs text-slate-500">Mendukung file hingga 200MB.</p>
+              </div>
+            ) : editFormData.file_url ? (
+              <div className="border-2 border-indigo-400 bg-indigo-50/70 rounded-3xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-xs uppercase shadow-sm">
+                    {uploadedEditFileInfo?.ext || (editFormData.file_url.split('.').pop().toUpperCase()) || 'FILE'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-900 line-clamp-1">
+                      {uploadedEditFileInfo?.name || editFormData.title || 'File Bahan Ajar'}
+                    </p>
+                    <p className="text-xs text-slate-500 font-bold">
+                      Ukuran: {editFormData.file_size || uploadedEditFileInfo?.size || 'Tersedia'} • Siap Disimpan
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => editFileInputRef.current?.click()}
+                  className="px-3.5 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 rounded-xl transition"
+                >
+                  Ganti File
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => editFileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsEditDragging(true); }}
+                onDragLeave={() => setIsEditDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsEditDragging(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleEditFileSelect(e.dataTransfer.files[0]);
+                  }
+                }}
+                className={`border-2 border-dashed rounded-3xl p-7 text-center cursor-pointer transition flex flex-col items-center justify-center group ${
+                  isEditDragging 
+                    ? 'border-indigo-600 bg-indigo-50/80 scale-[1.01]' 
+                    : 'border-indigo-300 bg-indigo-50/30 hover:bg-indigo-50/70 hover:border-indigo-500'
+                }`}
+              >
+                <div className="w-14 h-14 bg-indigo-100 group-hover:bg-indigo-200 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 transition shadow-xs">
+                  <UploadCloud className="w-8 h-8" />
+                </div>
+                <p className="text-base font-black text-slate-900">
+                  Tarik & Lepas File ke Sini, atau <span className="text-indigo-600 underline">Pilih File Baru</span>
+                </p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">
+                  Mendukung: <span className="font-bold text-slate-700">PDF, PPT/PPTX, DOC/DOCX, PNG/JPG</span> (Maks. 200MB)
+                </p>
+              </div>
+            )}
+
+            {/* Manual Link Input Toggle */}
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setShowEditManualUrl(!showEditManualUrl)}
+                className="text-xs font-bold text-slate-500 hover:text-indigo-600 underline"
+              >
+                {showEditManualUrl ? 'Tutup input URL manual' : 'Atau ubah URL link langsung'}
+              </button>
+            </div>
+
+            {showEditManualUrl && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  placeholder="URL File: https://..."
+                  value={editFormData.file_url}
+                  onChange={(e) => setEditFormData({ ...editFormData, file_url: e.target.value })}
+                  className="w-full px-4 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 font-medium"
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Judul Bahan Ajar *</label>
+            <input
+              type="text"
+              required
+              placeholder="Contoh: Belajar Membaca Suku Kata BA-BI-BU"
+              value={editFormData.title}
+              onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 font-medium"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Tipe Dokumen</label>
+              <select
+                value={editFormData.type}
+                onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                className="w-full px-4 py-3 border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+              >
+                <option value="buku_bacaan">📖 Buku Bacaan PDF</option>
+                <option value="worksheet">📝 Worksheet Latihan</option>
+                <option value="ppt_materi">📊 Slide PPT Materi</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Level Sasaran</label>
+              <select
+                value={editFormData.level}
+                onChange={(e) => setEditFormData({ ...editFormData, level: e.target.value })}
+                className="w-full px-4 py-3 border border-slate-300 rounded-2xl bg-white font-bold text-slate-800"
+              >
+                <option value="Pra Membaca">Pra Membaca</option>
+                <option value="Level 1">Level 1</option>
+                <option value="Level 2">Level 2</option>
+                <option value="Level 3">Level 3</option>
+                <option value="Level 4">Level 4</option>
+                <option value="Level 5">Level 5</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori Materi</label>
+              <input
+                type="text"
+                value={editFormData.category}
+                onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                placeholder="Contoh: Bahasa Indonesia / Huruf Vokal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Jumlah Halaman</label>
+              <input
+                type="number"
+                min="1"
+                value={editFormData.total_pages}
+                onChange={(e) => setEditFormData({ ...editFormData, total_pages: parseInt(e.target.value) || 1 })}
+                className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 font-medium"
+              />
+            </div>
+          </div>
+
+          {/* Optional Thumbnail Upload */}
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Foto Sampul (Thumbnail Preview Opsional)</label>
+            <input
+              ref={editThumbInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleEditThumbnailSelect(e.target.files[0]);
+                }
+              }}
+              className="hidden"
+            />
+            <div className="flex items-center gap-3">
+              {editFormData.thumbnail_url && (
+                <img
+                  src={getUploadUrl(editFormData.thumbnail_url)}
+                  alt="Thumb"
+                  className="w-14 h-14 object-cover rounded-xl border border-slate-300 shadow-sm"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => editThumbInputRef.current?.click()}
+                disabled={uploadingEditThumbnail}
+                className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition"
+              >
+                {uploadingEditThumbnail ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                ) : (
+                  <ImageIcon className="w-4 h-4 text-slate-500" />
+                )}
+                <span>{editFormData.thumbnail_url ? 'Ganti Foto Sampul' : 'Upload Foto Sampul (Gambar)'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Deskripsi Singkat</label>
+            <textarea
+              rows={2}
+              placeholder="Jelaskan isi buku atau latihan yang ada di dalam lembar kerja..."
+              value={editFormData.description}
+              onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 font-medium text-sm"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-5 py-2.5 text-sm font-bold text-slate-600 rounded-xl hover:bg-slate-100"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={uploadingEditFile || !editFormData.file_url}
+              className="px-6 py-2.5 text-sm font-extrabold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl shadow-md transition"
+            >
+              Simpan Perubahan
             </button>
           </div>
         </form>

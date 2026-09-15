@@ -59,10 +59,13 @@ export const API_ENDPOINTS = {
   DICTIONARY: {
     LIST: "/dictionary",
     CREATE: "/dictionary",
+    UPDATE: (id) => `/dictionary/${id}`,
+    DELETE: (id) => `/dictionary/${id}`,
   },
   LIBRARY: {
     LIST: "/library",
     CREATE: "/library",
+    UPDATE: (id) => `/library/${id}`,
     DELETE: (id) => `/library/${id}`,
   },
   CURRICULUM: {

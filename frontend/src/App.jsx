@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
 import { SidebarLayout } from './components/SidebarLayout';
@@ -31,9 +31,13 @@ export default function App() {
       <Toaster position="top-right" reverseOrder={false} />
       <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
+          {/* Public Landing Page */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
+
+          {/* Public Only - Authenticated users redirected to /dashboard */}
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+          </Route>
 
           {/* Protected App Routes wrapped inside SidebarLayout */}
           <Route element={<ProtectedRoute />}>
