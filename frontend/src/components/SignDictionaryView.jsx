@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Sparkles, BookOpen, Volume2, Eye, Filter, CheckCircle2, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Search, Plus, Sparkles, BookOpen, Volume2, Eye, Filter, CheckCircle2, 
+  ArrowRight, UploadCloud, Video, Play, Loader2, X, Image as ImageIcon, Film
+} from 'lucide-react';
 import { SafeImage } from './SafeImage';
 import { request } from '../utils/request';
-import { API_ENDPOINTS } from '../utils/endpoints';
+import { API_ENDPOINTS, getUploadUrl } from '../utils/endpoints';
 import { Modal } from './Modal';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -24,11 +27,18 @@ export function SignDictionaryView() {
 
   // Modal Add Item
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [uploadedMediaInfo, setUploadedMediaInfo] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showManualLink, setShowManualLink] = useState(false);
+  const mediaInputRef = useRef(null);
+
   const [formData, setFormData] = useState({
     word: '',
     category: 'alfabet',
     level: 'Level 1',
     image_url: '',
+    video_url: '',
     description: '',
     tags: ''
   });
@@ -69,24 +79,68 @@ export function SignDictionaryView() {
     setIsDetailModalOpen(true);
   };
 
+  const handleMediaSelect = async (file) => {
+    if (!file) return;
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name);
+    const sizeStr = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+      : `${Math.round(file.size / 1024)} KB`;
+
+    setUploadingMedia(true);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+
+    try {
+      const res = await request.post(API_ENDPOINTS.UPLOADS.UPLOAD_FILE, uploadData);
+      if (res.success && res.data) {
+        const fileUrl = res.data.url;
+        setFormData(prev => ({
+          ...prev,
+          image_url: fileUrl,
+          video_url: isVideo ? fileUrl : (prev.video_url || '')
+        }));
+        setUploadedMediaInfo({
+          name: file.name,
+          size: sizeStr,
+          type: isVideo ? 'video' : 'image',
+          url: fileUrl
+        });
+        toast.success(`🎉 ${isVideo ? 'Video MP4 isyarat' : 'Foto gerakan'} berhasil diunggah!`);
+      } else {
+        toast.error(res.message || 'Gagal mengunggah file media');
+      }
+    } catch (err) {
+      console.error('Media upload error:', err);
+      toast.error(err.response?.data?.message || 'Gagal mengunggah file media ke server');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
   const handleSaveItem = async (e) => {
     e.preventDefault();
     if (!formData.word) {
       toast.error('Kata / kosakata isyarat wajib diisi!');
       return;
     }
+    if (!formData.image_url && !formData.video_url) {
+      toast.error('Silakan upload foto gerakan atau video isyarat terlebih dahulu!');
+      return;
+    }
 
     try {
       const payload = {
         ...formData,
-        image_url: formData.image_url || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=500',
+        image_url: formData.image_url || formData.video_url || null,
+        video_url: formData.video_url || null,
         tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [formData.word.toLowerCase()]
       };
       const res = await request.post(API_ENDPOINTS.DICTIONARY.CREATE, payload);
       if (res.success) {
-        toast.success(`🎉 Kata isyarat "${formData.word}" berhasil ditambahkan ke Kamus Gambar!`);
+        toast.success(`🎉 Kata isyarat "${formData.word}" berhasil disimpan ke Kamus Isyarat!`);
         setIsAddModalOpen(false);
-        setFormData({ word: '', category: 'alfabet', level: 'Level 1', image_url: '', description: '', tags: '' });
+        setUploadedMediaInfo(null);
+        setFormData({ word: '', category: 'alfabet', level: 'Level 1', image_url: '', video_url: '', description: '', tags: '' });
         fetchDictionary();
       }
     } catch (err) {
@@ -200,48 +254,77 @@ export function SignDictionaryView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {dictionaryList.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => handleOpenDetail(item)}
-              className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition duration-200 cursor-pointer flex flex-col group"
-            >
-              {/* Image Illustration Frame */}
-              <div className="relative aspect-square bg-slate-100 overflow-hidden">
-                <SafeImage
-                  src={item.image_url || item.illustration_url}
-                  alt={item.word}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                />
-                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black text-teal-800 shadow-sm border border-white/50">
-                  {item.level || 'Level 1'}
-                </div>
-                <div className="absolute top-3 right-3 bg-teal-600 text-white p-2 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition">
-                  <Eye className="w-4 h-4" />
-                </div>
-              </div>
+          {dictionaryList.map((item) => {
+              const isVideo = !!(item.video_url || /\.(mp4|webm)$/i.test(item.image_url || '') || /\.(mp4|webm)$/i.test(item.illustration_url || ''));
+              const mediaUrl = getUploadUrl(item.video_url || item.image_url || item.illustration_url);
 
-              {/* Card Body */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
-                <div>
-                  <span className="text-xs font-extrabold text-teal-600 uppercase tracking-wider block">
-                    {item.category?.replace('_', ' ')}
-                  </span>
-                  <h3 className="text-xl font-black text-slate-900 group-hover:text-teal-700 transition mt-0.5">
-                    {item.word}
-                  </h3>
-                  <p className="text-xs text-slate-600 font-medium line-clamp-2 mt-1.5 leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => handleOpenDetail(item)}
+                  className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition duration-200 cursor-pointer flex flex-col group"
+                >
+                  {/* Media Illustration Frame */}
+                  <div className="relative aspect-square bg-slate-900 overflow-hidden">
+                    {isVideo ? (
+                      <>
+                        <video
+                          src={mediaUrl}
+                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition duration-300"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-teal-500/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+                            <Play className="w-5 h-5 fill-white ml-0.5" />
+                          </div>
+                        </div>
+                        <div className="absolute top-3 left-3 bg-teal-900/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black text-teal-200 shadow-sm border border-teal-700/50 flex items-center gap-1.5">
+                          <Video className="w-3.5 h-3.5 text-teal-300" />
+                          <span>Video Isyarat</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <SafeImage
+                          src={item.image_url || item.illustration_url}
+                          alt={item.word}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black text-teal-800 shadow-sm border border-white/50">
+                          {item.level || 'Level 1'}
+                        </div>
+                      </>
+                    )}
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-700">
-                  <span>Lihat Gerakan Isyarat</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                    <div className="absolute top-3 right-3 bg-teal-600 text-white p-2 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition">
+                      <Eye className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      <span className="text-xs font-extrabold text-teal-600 uppercase tracking-wider block">
+                        {item.category?.replace('_', ' ')}
+                      </span>
+                      <h3 className="text-xl font-black text-slate-900 group-hover:text-teal-700 transition mt-0.5">
+                        {item.word}
+                      </h3>
+                      <p className="text-xs text-slate-600 font-medium line-clamp-2 mt-1.5 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-700">
+                      <span>{isVideo ? 'Putar Video Gerakan' : 'Lihat Gerakan Isyarat'}</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              );
+            })}
         </div>
       )}
 
@@ -251,47 +334,65 @@ export function SignDictionaryView() {
         onClose={() => setIsDetailModalOpen(false)}
         title={`Panduan Isyarat: ${selectedItem?.word || ''}`}
       >
-        {selectedItem && (
-          <div className="space-y-6">
-            <div className="rounded-3xl overflow-hidden border border-slate-200 aspect-video bg-slate-50 flex items-center justify-center">
-              <SafeImage
-                src={selectedItem.image_url || selectedItem.illustration_url}
-                alt={selectedItem.word}
-                className="w-full h-full object-cover"
-              />
-            </div>
+        {selectedItem && (() => {
+          const isVideo = !!(selectedItem.video_url || /\.(mp4|webm)$/i.test(selectedItem.image_url || '') || /\.(mp4|webm)$/i.test(selectedItem.illustration_url || ''));
+          const mediaUrl = getUploadUrl(selectedItem.video_url || selectedItem.image_url || selectedItem.illustration_url);
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 bg-teal-100 text-teal-800 rounded-lg text-xs font-black uppercase">
-                  {selectedItem.category} • {selectedItem.level}
-                </span>
-                <span className="text-xs text-slate-400 font-bold">The Little Hijabi BISINDO</span>
-              </div>
-              <h3 className="text-2xl font-black text-slate-900">{selectedItem.word}</h3>
-              <div className="p-4 bg-teal-50/80 border border-teal-200 rounded-2xl space-y-1.5">
-                <h4 className="text-xs font-black text-teal-900 uppercase tracking-wider">💡 Cara Memperagakan Gerakan:</h4>
-                <p className="text-sm font-medium text-teal-950 leading-relaxed">{selectedItem.description}</p>
-              </div>
-            </div>
+          return (
+            <div className="space-y-6">
+              {isVideo ? (
+                <div className="rounded-3xl overflow-hidden border border-slate-800 aspect-video bg-black flex items-center justify-center shadow-lg relative">
+                  <video
+                    controls
+                    autoPlay
+                    playsInline
+                    src={mediaUrl}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-3xl overflow-hidden border border-slate-200 aspect-video bg-slate-50 flex items-center justify-center">
+                  <SafeImage
+                    src={mediaUrl}
+                    alt={selectedItem.word}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
 
-            <div className="flex justify-end pt-4 border-t border-slate-100">
-              <button
-                onClick={() => setIsDetailModalOpen(false)}
-                className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition"
-              >
-                Tutup Panduan
-              </button>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-3 py-1 bg-teal-100 text-teal-800 rounded-lg text-xs font-black uppercase flex items-center gap-1.5">
+                    {isVideo && <Video className="w-3.5 h-3.5" />}
+                    {selectedItem.category} • {selectedItem.level}
+                  </span>
+                  <span className="text-xs text-slate-400 font-bold">The Little Hijabi BISINDO</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900">{selectedItem.word}</h3>
+                <div className="p-4 bg-teal-50/80 border border-teal-200 rounded-2xl space-y-1.5">
+                  <h4 className="text-xs font-black text-teal-900 uppercase tracking-wider">💡 Cara Memperagakan Gerakan:</h4>
+                  <p className="text-sm font-medium text-teal-950 leading-relaxed">{selectedItem.description}</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => setIsDetailModalOpen(false)}
+                  className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition"
+                >
+                  Tutup Panduan
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Modal Add Kata Isyarat Baru */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Tambah Kosakata Isyarat Bergambar Baru"
+        title="Tambah Kosakata Isyarat (Foto / Video MP4)"
       >
         <form onSubmit={handleSaveItem} className="space-y-4">
           <div>
@@ -341,25 +442,140 @@ export function SignDictionaryView() {
             </div>
           </div>
 
+          {/* Direct File & Video MP4 Uploader */}
           <div>
-            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">URL Gambar / Foto Gerakan Isyarat</label>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">
+              Upload File Foto atau Video Gerakan Isyarat (MP4) *
+            </label>
+
             <input
-              type="text"
-              placeholder="https://..."
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-teal-600 font-medium"
+              ref={mediaInputRef}
+              type="file"
+              accept="image/*,video/mp4,video/webm,.mp4,.webm"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleMediaSelect(e.target.files[0]);
+                }
+              }}
+              className="hidden"
             />
+
+            {uploadingMedia ? (
+              <div className="border-2 border-dashed border-teal-400 rounded-3xl p-8 text-center bg-teal-50/60 flex flex-col items-center justify-center space-y-3">
+                <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+                <p className="text-base font-black text-slate-800">Sedang mengunggah file media ke /uploads...</p>
+                <p className="text-xs text-slate-500">Mendukung video MP4 hingga 200MB. Mohon tunggu beberapa saat.</p>
+              </div>
+            ) : (formData.video_url || formData.image_url) ? (
+              <div className="border-2 border-teal-400 bg-teal-50/70 rounded-3xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-teal-800 font-extrabold text-xs">
+                    <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
+                    <span>{formData.video_url ? 'Video MP4 Gerakan Siap Disimpan' : 'Foto Gerakan Siap Disimpan'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, image_url: '', video_url: '' }));
+                      setUploadedMediaInfo(null);
+                    }}
+                    className="px-3 py-1 text-xs font-bold text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-xl transition"
+                  >
+                    Ganti File
+                  </button>
+                </div>
+
+                {/* Preview media */}
+                <div className="rounded-2xl overflow-hidden border border-teal-200 bg-slate-900 max-h-48 flex items-center justify-center">
+                  {formData.video_url || /\.(mp4|webm)$/i.test(formData.image_url) ? (
+                    <video
+                      controls
+                      src={getUploadUrl(formData.video_url || formData.image_url)}
+                      className="w-full max-h-48 object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={getUploadUrl(formData.image_url)}
+                      alt="Preview"
+                      className="w-full max-h-48 object-cover"
+                    />
+                  )}
+                </div>
+                {uploadedMediaInfo && (
+                  <p className="text-xs text-slate-500 font-medium">
+                    File: <span className="font-bold text-slate-700">{uploadedMediaInfo.name}</span> ({uploadedMediaInfo.size})
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div
+                onClick={() => mediaInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleMediaSelect(e.dataTransfer.files[0]);
+                  }
+                }}
+                className={`border-2 border-dashed rounded-3xl p-7 text-center cursor-pointer transition flex flex-col items-center justify-center group ${
+                  isDragging 
+                    ? 'border-teal-600 bg-teal-50/80 scale-[1.01]' 
+                    : 'border-teal-300 bg-teal-50/40 hover:bg-teal-50/80 hover:border-teal-500'
+                }`}
+              >
+                <div className="w-14 h-14 bg-teal-100 group-hover:bg-teal-200 text-teal-700 rounded-2xl flex items-center justify-center mb-3 transition shadow-xs">
+                  <UploadCloud className="w-8 h-8" />
+                </div>
+                <p className="text-base font-black text-slate-900">
+                  Tarik & Lepas File ke Sini, atau <span className="text-teal-600 underline">Klik untuk Pilih File</span>
+                </p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">
+                  Mendukung: <span className="font-bold text-slate-700">Video MP4, WEBM</span> atau <span className="font-bold text-slate-700">Foto JPG, PNG, WEBP</span> (Maksimal 200MB)
+                </p>
+              </div>
+            )}
+
+            {/* Manual Link Input Toggle */}
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setShowManualLink(!showManualLink)}
+                className="text-xs font-bold text-slate-500 hover:text-teal-600 underline"
+              >
+                {showManualLink ? 'Tutup input URL manual' : 'Atau input URL link langsung'}
+              </button>
+            </div>
+
+            {showManualLink && (
+              <div className="mt-2 space-y-2">
+                <input
+                  type="text"
+                  placeholder="URL Gambar: https://..."
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  className="w-full px-4 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 font-medium"
+                />
+                <input
+                  type="text"
+                  placeholder="URL Video MP4: https://.../video.mp4"
+                  value={formData.video_url}
+                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                  className="w-full px-4 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 font-medium"
+                />
+              </div>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Deskripsi / Panduan Gerakan Tangan</label>
             <textarea
-              rows={3}
+              rows={2}
               placeholder="Jelaskan bentuk jari, tangan, dan posisi gerakan..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-teal-600 font-medium"
+              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-teal-600 font-medium text-sm"
             />
           </div>
 
@@ -373,7 +589,8 @@ export function SignDictionaryView() {
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 text-sm font-extrabold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md"
+              disabled={uploadingMedia || (!formData.image_url && !formData.video_url)}
+              className="px-6 py-2.5 text-sm font-extrabold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl shadow-md transition"
             >
               Simpan ke Kamus
             </button>

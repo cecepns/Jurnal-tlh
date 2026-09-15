@@ -22,9 +22,7 @@ export function SidebarLayout() {
       { path: '/curriculum', label: '📚 Kurikulum Inklusif', icon: BookOpen },
       { path: '/sign-dictionary', label: '🤟 Kamus Isyarat Bergambar', icon: Sparkles },
       { path: '/library', label: '📂 Digital Library & Buku', icon: BookOpen },
-      { path: '/schools', label: 'Kelola Sekolah SaaS', icon: Building },
       { path: '/teachers', label: 'Kelola Admin & Guru', icon: Users },
-      { path: '/subscriptions', label: 'Paket & Subscription', icon: Award },
     ],
     school_admin: [
       { path: '/dashboard', label: 'Dashboard Sekolah', icon: LayoutDashboard },

@@ -10,42 +10,42 @@ export const defaultDemoUsers = {
     name: 'Super Admin SaaS',
     email: 'superadmin@littlehijabi.com',
     role: 'super_admin',
-    avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'
+    avatar_url: null
   },
   school_admin: {
     id: 2,
     name: 'Ustadzah Sarah (Admin TK)',
     email: 'admin.tk@littlehijabi.com',
     role: 'school_admin',
-    avatar_url: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150'
+    avatar_url: null
   },
   principal: {
     id: 3,
     name: 'Bunda Maryam, M.Pd (Kepsek)',
     email: 'kepsek@littlehijabi.com',
     role: 'principal',
-    avatar_url: 'https://images.unsplash.com/photo-1580894732468-9111ad5467e2?w=150'
+    avatar_url: null
   },
   teacher: {
     id: 4,
     name: 'Bu Ani, S.Pd (Wali Kelas TK A)',
     email: 'guru.ani@littlehijabi.com',
     role: 'teacher',
-    avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'
+    avatar_url: null
   },
   parent: {
     id: 5,
     name: 'Bapak Budi (Orang Tua Aisyah)',
     email: 'ortu.budi@littlehijabi.com',
     role: 'parent',
-    avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'
+    avatar_url: null
   },
   student: {
     id: 6,
     name: 'Aisyah Putri Humaira (Siswa TK A)',
     email: 'aisyah@littlehijabi.com',
     role: 'student',
-    avatar_url: 'https://images.unsplash.com/photo-1595454223600-91fbddbbf163?w=150'
+    avatar_url: null
   }
 };
 

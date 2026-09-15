@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `dictionary_items` (
   `level` VARCHAR(50) DEFAULT 'Level 1',
   `image_url` VARCHAR(255) NOT NULL,
   `illustration_url` VARCHAR(255),
+  `video_url` VARCHAR(255) NULL,
   `description` TEXT,
   `tags` JSON,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP

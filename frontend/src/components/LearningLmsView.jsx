@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Award, Sparkles, BookOpen, Star, Plus, Edit, Trash2, Video, FileText, Search, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Award, Sparkles, BookOpen, Star, Plus, Edit, Trash2, Video, FileText, Search, ArrowRight, UploadCloud, Loader2, CheckCircle2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SafeImage } from './SafeImage';
 import { request } from '../utils/request';
-import { API_ENDPOINTS } from '../utils/endpoints';
+import { API_ENDPOINTS, getUploadUrl } from '../utils/endpoints';
 import { Modal } from './Modal';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -29,6 +29,8 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
   // Modal State for Course CRUD
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [uploadingCourseVideo, setUploadingCourseVideo] = useState(false);
+  const courseVideoRef = useRef(null);
   const [courseFormData, setCourseFormData] = useState({
     title: '',
     category: 'Bahasa Isyarat',
@@ -71,7 +73,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             title: 'Alfabet Isyarat (A - Z) & Gerakan Tangan Mandiri',
             category: 'Bahasa Isyarat',
             level: 'Level 1',
-            thumbnail: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400',
+            thumbnail: '',
             description: 'Mengenal isyarat abjad A-Z BISINDO dengan gerakan jari dan posisi tangan yang tepat.',
             video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
           },
@@ -80,7 +82,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             title: 'Angka Isyarat (0 - 10) & Berhitung Ceria',
             category: 'Bahasa Isyarat',
             level: 'Level 1',
-            thumbnail: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=400',
+            thumbnail: '',
             description: 'Panduan isyarat bilangan 0 sampai 10 dan latihan berhitung bersama guru.',
             video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
           },
@@ -89,7 +91,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             title: 'Tema Siapa Aku & Keluarga Tercinta',
             category: 'Bahasa Isyarat',
             level: 'Level 1',
-            thumbnail: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400',
+            thumbnail: '',
             description: 'Isyarat Ayah, Ibu, Kakak, Adik, Rumah Tinggal, Hobi, serta Makanan & Minuman.',
             video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
           },
@@ -98,7 +100,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             title: 'Pra Membaca: Sensori Fonik & Pengenalan Huruf Vokal',
             category: 'Bahasa Indonesia',
             level: 'Pra Membaca',
-            thumbnail: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400',
+            thumbnail: '',
             description: 'Belajar bunyi vokal A, I, U, E, O dan mencocokkan lambang huruf dengan gambar fabel.',
             video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
           },
@@ -107,7 +109,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             title: 'Membaca Suku Kata Terbuka (BA-JU, BO-LA)',
             category: 'Bahasa Indonesia',
             level: 'Level 1',
-            thumbnail: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400',
+            thumbnail: '',
             description: 'Merangkai suku kata bermakna dengan riang dan intonasi yang tepat.',
             video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
           }
@@ -491,12 +493,21 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
 
               {/* Video Player Frame */}
               <div className="relative aspect-video bg-slate-900 rounded-3xl overflow-hidden flex items-center justify-center border border-slate-800 shadow-lg">
-                <iframe
-                  src={currentCourseObj.video_url || 'https://www.youtube.com/embed/dQw4w9WgXcQ'}
-                  title={currentCourseObj.title}
-                  className="w-full h-full rounded-3xl"
-                  allowFullScreen
-                />
+                {currentCourseObj.video_url?.includes('/uploads/') || /\.(mp4|webm)$/i.test(currentCourseObj.video_url || '') ? (
+                  <video
+                    controls
+                    playsInline
+                    src={getUploadUrl(currentCourseObj.video_url)}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <iframe
+                    src={currentCourseObj.video_url || 'https://www.youtube.com/embed/dQw4w9WgXcQ'}
+                    title={currentCourseObj.title}
+                    className="w-full h-full rounded-3xl"
+                    allowFullScreen
+                  />
+                )}
               </div>
 
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
@@ -646,14 +657,65 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
           </div>
 
           <div>
-            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">URL Video Embed (YouTube / MP4)</label>
+            <label className="block text-sm font-extrabold text-slate-800 mb-1.5">
+              Video Pembelajaran (Upload File MP4 / URL)
+            </label>
+
             <input
-              type="text"
-              placeholder="https://www.youtube.com/embed/xxxx"
-              value={courseFormData.video_url}
-              onChange={(e) => setCourseFormData({ ...courseFormData, video_url: e.target.value })}
-              className="w-full px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-600 font-medium"
+              ref={courseVideoRef}
+              type="file"
+              accept="video/mp4,video/webm,.mp4,.webm"
+              onChange={async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                  const file = e.target.files[0];
+                  setUploadingCourseVideo(true);
+                  const uploadData = new FormData();
+                  uploadData.append('file', file);
+                  try {
+                    const res = await request.post(API_ENDPOINTS.UPLOADS.UPLOAD_FILE, uploadData);
+                    if (res.success && res.data) {
+                      setCourseFormData(prev => ({ ...prev, video_url: res.data.url }));
+                      toast.success(`Video ${file.name} berhasil diunggah!`);
+                    } else {
+                      toast.error('Gagal mengunggah video');
+                    }
+                  } catch (err) {
+                    toast.error('Gagal mengunggah video');
+                  } finally {
+                    setUploadingCourseVideo(false);
+                  }
+                }
+              }}
+              className="hidden"
             />
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="https://... atau upload file MP4"
+                value={courseFormData.video_url}
+                onChange={(e) => setCourseFormData({ ...courseFormData, video_url: e.target.value })}
+                className="flex-1 px-4 py-3 text-base border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-600 font-medium"
+              />
+              <button
+                type="button"
+                onClick={() => courseVideoRef.current?.click()}
+                disabled={uploadingCourseVideo}
+                className="px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold text-xs flex items-center gap-1.5 transition shrink-0"
+              >
+                {uploadingCourseVideo ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Video className="w-4 h-4" />
+                )}
+                <span>Upload MP4</span>
+              </button>
+            </div>
+            {courseFormData.video_url && (
+              <p className="text-xs text-teal-700 font-medium mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> File video: {courseFormData.video_url.split('/').pop()}
+              </p>
+            )}
           </div>
 
           <div>

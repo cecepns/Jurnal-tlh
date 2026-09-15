@@ -79,10 +79,13 @@ export const API_ENDPOINTS = {
 
 export const getUploadUrl = (filePath) => {
   if (!filePath) return '';
-  if (filePath.startsWith('http://') || filePath.startsWith('https://') || filePath.startsWith('data:')) {
+  if (filePath.startsWith('http://') || filePath.startsWith('https://') || filePath.startsWith('data:') || filePath.startsWith('blob:')) {
     return filePath;
   }
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const defaultBaseURL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000/api'
+    : 'https://api.kingcreativestudio.my.id/the-little-hijabi/api';
+  const apiBase = import.meta.env.VITE_API_URL || defaultBaseURL;
   const serverBase = apiBase.replace(/\/api\/?$/, '');
   const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
   return `${serverBase}${cleanPath.startsWith('/uploads') ? cleanPath : `/uploads${cleanPath}`}`;

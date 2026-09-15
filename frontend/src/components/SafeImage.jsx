@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ImageOff } from 'lucide-react';
 import { getUploadUrl } from '../utils/endpoints';
 
 export function SafeImage({ src, alt, className = '', isAvatar = false, fallbackText = '' }) {
   const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+  }, [src]);
 
   const resolvedSrc = getUploadUrl(src);
 
@@ -17,9 +21,9 @@ export function SafeImage({ src, alt, className = '', isAvatar = false, fallback
       );
     }
     return (
-      <div className={`flex flex-col items-center justify-center bg-slate-100 text-slate-400 rounded-xl shrink-0 border border-slate-200 p-2 select-none ${className}`}>
-        <ImageOff className="w-6 h-6 text-slate-400 mb-1" />
-        <span className="text-[10px] font-bold text-slate-400">Gambar</span>
+      <div className={`flex flex-col items-center justify-center bg-slate-100 text-slate-400 select-none ${className}`}>
+        <ImageOff className="w-8 h-8 text-slate-400 mb-1" strokeWidth={1.5} />
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Belum Ada Gambar</span>
       </div>
     );
   }

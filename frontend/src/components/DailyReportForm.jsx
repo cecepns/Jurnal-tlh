@@ -21,10 +21,10 @@ export function DailyReportForm() {
   ];
 
   const studentsList = [
-    { id: 1, name: 'Aisyah Putri Humaira', avatar: 'https://images.unsplash.com/photo-1595454223600-91fbddbbf163?w=100' },
-    { id: 2, name: 'Ahmad Zaki Al-Faris', avatar: 'https://images.unsplash.com/photo-1519238263530-99afd11df2ea?w=100' },
-    { id: 3, name: 'Siti Zahra Medina', avatar: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=100' },
-    { id: 4, name: 'Budi Pratama', avatar: 'https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=100' }
+    { id: 1, name: 'Aisyah Putri Humaira', avatar: null },
+    { id: 2, name: 'Ahmad Zaki Al-Faris', avatar: null },
+    { id: 3, name: 'Siti Zahra Medina', avatar: null },
+    { id: 4, name: 'Budi Pratama', avatar: null }
   ];
 
   const toggleActivity = (act) => {

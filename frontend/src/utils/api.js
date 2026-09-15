@@ -1,7 +1,11 @@
 import axios from "axios";
 
+const defaultBaseURL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000/api'
+  : 'https://api.kingcreativestudio.my.id/the-little-hijabi/api';
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://api.kingcreativestudio.my.id/the-little-hijabi/api",
+  baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
   headers: {
     "Content-Type": "application/json",
   },

@@ -12,15 +12,21 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'the_little_hijabi_secret_key_2026';
 
+const fs = require('fs');
+
 // Middlewares
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ extended: true, limit: '200mb' }));
 
 const multer = require('multer');
 
 // Configure Multer Storage for File Uploads
 const uploadDirectory = path.join(__dirname, process.env.UPLOAD_DIR || './uploads-the-little-hijabi');
+if (!fs.existsSync(uploadDirectory)) {
+  fs.mkdirSync(uploadDirectory, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDirectory);
@@ -33,28 +39,40 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 200 * 1024 * 1024 } // 200MB limit for video & large documents
 });
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(uploadDirectory));
 
-// File Upload Endpoint
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'Tidak ada file yang diunggah' });
-  }
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({
-    success: true,
-    message: 'File berhasil diunggah',
-    data: {
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      url: fileUrl
+// File Upload Endpoint with Multer Error Handling
+app.post('/api/upload', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Ukuran file melebihi batas maksimal (Maksimal 200MB)' });
+      }
+      return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
+    } else if (err) {
+      return res.status(500).json({ success: false, message: `Gagal upload: ${err.message}` });
     }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Tidak ada file yang diunggah' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({
+      success: true,
+      message: 'File berhasil diunggah',
+      data: {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        url: fileUrl
+      }
+    });
   });
 });
 
@@ -74,6 +92,15 @@ const dbPool = mysql.createPool({
   try {
     const connection = await dbPool.getConnection();
     console.log(`✅ Connected to MySQL Database: ${process.env.DB_NAME || 'the_little_hijabi'}`);
+    
+    // Auto-migrate video_url in dictionary_items
+    try {
+      await connection.query(`ALTER TABLE dictionary_items ADD COLUMN video_url VARCHAR(255) NULL AFTER illustration_url`);
+      console.log('✅ Added video_url column to dictionary_items');
+    } catch (e) {
+      // Column might already exist or table not initialized yet, safely ignore
+    }
+
     connection.release();
   } catch (err) {
     console.error(`❌ MySQL Connection Error: ${err.message}`);
@@ -148,7 +175,7 @@ app.post('/api/auth/login', async (req, res) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          avatar_url: user.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
+          avatar_url: user.avatar_url || null,
           school_name: 'TK The Little Hijabi Islamic School'
         }
       }
@@ -329,7 +356,7 @@ app.post('/api/users', async (req, res) => {
     password: hashedPassword,
     phone: req.body.phone || '0812-3456-7890',
     role: req.body.role || 'teacher',
-    avatar_url: req.body.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'
+    avatar_url: req.body.avatar_url || null
   };
 
   try {
@@ -389,7 +416,7 @@ app.post('/api/students', async (req, res) => {
     nickname: req.body.nickname || req.body.full_name.split(' ')[0],
     gender: req.body.gender || 'P',
     birth_date: req.body.birth_date || '2021-05-10',
-    avatar_url: req.body.avatar_url || 'https://images.unsplash.com/photo-1595454223600-91fbddbbf163?w=200'
+    avatar_url: req.body.avatar_url || null
   };
 
   try {
@@ -614,7 +641,7 @@ app.post('/api/courses', async (req, res) => {
     category: req.body.category || 'Bahasa Isyarat',
     level: req.body.level || 'Level 1',
     description: req.body.description || '',
-    thumbnail: req.body.thumbnail || 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400',
+    thumbnail: req.body.thumbnail || null,
     video_url: req.body.video_url || 'https://www.youtube.com/embed/dQw4w9WgXcQ'
   };
 
@@ -809,21 +836,50 @@ app.get('/api/dictionary', async (req, res) => {
 });
 
 app.post('/api/dictionary', async (req, res) => {
-  const { word, category = 'umum', level = 'Level 1', image_url, description = '', tags = [] } = req.body;
+  const { word, category = 'umum', level = 'Level 1', image_url, illustration_url, video_url, description = '', tags = [] } = req.body;
 
   if (!word) {
     return res.status(400).json({ success: false, message: 'Kata isyarat wajib diisi!' });
   }
 
   try {
-    const [result] = await dbPool.query(
-      'INSERT INTO dictionary_items (word, category, level, image_url, illustration_url, description, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [word, category, level, image_url || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=500', image_url || null, description, JSON.stringify(tags || [word.toLowerCase()])]
-    );
+    let result;
+    try {
+      const [resDb] = await dbPool.query(
+        'INSERT INTO dictionary_items (word, category, level, image_url, illustration_url, video_url, description, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          word,
+          category,
+          level,
+          image_url || video_url || null,
+          illustration_url || image_url || null,
+          video_url || null,
+          description,
+          JSON.stringify(tags || [word.toLowerCase()])
+        ]
+      );
+      result = resDb;
+    } catch (colErr) {
+      // Fallback if video_url column is not present in legacy schema
+      const [resFallback] = await dbPool.query(
+        'INSERT INTO dictionary_items (word, category, level, image_url, illustration_url, description, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          word,
+          category,
+          level,
+          image_url || video_url || null,
+          illustration_url || image_url || null,
+          description,
+          JSON.stringify(tags || [word.toLowerCase()])
+        ]
+      );
+      result = resFallback;
+    }
+
     res.json({
       success: true,
       message: 'Kata kamus baru berhasil disimpan di Database!',
-      data: { id: result.insertId, word, category, level, image_url, description, tags }
+      data: { id: result.insertId, word, category, level, image_url: image_url || video_url, video_url, description, tags }
     });
   } catch (err) {
     console.error('MySQL insert dictionary error:', err.message);
@@ -877,7 +933,7 @@ app.post('/api/library', async (req, res) => {
   try {
     const [result] = await dbPool.query(
       'INSERT INTO library_items (title, type, category, level, file_url, thumbnail_url, description, total_pages, file_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [title, type, category, level, file_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', thumbnail_url || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500', description, total_pages, file_size]
+      [title, type, category, level, file_url, thumbnail_url || null, description, total_pages, file_size]
     );
     res.json({
       success: true,

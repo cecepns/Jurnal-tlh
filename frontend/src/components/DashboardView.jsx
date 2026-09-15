@@ -220,7 +220,7 @@ export function DashboardView() {
       <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-800 text-white p-8 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <SafeImage
-            src={user?.avatar_url || "https://images.unsplash.com/photo-1595454223600-91fbddbbf163?w=200"}
+            src={user?.avatar_url || null}
             alt={user?.name || "Siswa"}
             isAvatar={true}
             fallbackText={user?.name || "Siswa"}
