@@ -683,23 +683,23 @@ export function DigitalLibraryView() {
                 <p className="text-xs text-slate-500">Mendukung file besar hingga 200MB. Mohon tunggu beberapa saat.</p>
               </div>
             ) : formData.file_url ? (
-              <div className="border-2 border-emerald-400 bg-emerald-50/70 rounded-3xl p-5 flex items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm ${
+              <div className="border-2 border-emerald-400 bg-emerald-50/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-black text-xs sm:text-sm shrink-0 shadow-sm ${
                     formData.type === 'ppt_materi' ? 'bg-amber-500' :
                     formData.type === 'worksheet' ? 'bg-blue-600' : 'bg-rose-600'
                   }`}>
                     {uploadedFileInfo?.ext || (formData.type === 'ppt_materi' ? 'PPT' : 'PDF')}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold text-xs">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>File Berhasil Diunggah & Siap Disimpan</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
+                      <span className="truncate">File Siap Disimpan</span>
                     </div>
-                    <p className="text-sm font-black text-slate-900 truncate mt-0.5">
+                    <p className="text-xs sm:text-sm font-black text-slate-900 truncate mt-0.5" title={uploadedFileInfo?.name || formData.file_url.split('/').pop()}>
                       {uploadedFileInfo?.name || formData.file_url.split('/').pop()}
                     </p>
-                    <p className="text-xs text-slate-500 font-medium">Ukuran: {formData.file_size}</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium">Ukuran: {formData.file_size}</p>
                   </div>
                 </div>
 
@@ -709,7 +709,7 @@ export function DigitalLibraryView() {
                     setFormData(prev => ({ ...prev, file_url: '' }));
                     setUploadedFileInfo(null);
                   }}
-                  className="px-3.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-xl transition shrink-0"
+                  className="self-end sm:self-center px-3.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-xl transition shrink-0"
                 >
                   Ganti File
                 </button>
@@ -780,7 +780,7 @@ export function DigitalLibraryView() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Tipe Dokumen</label>
               <select
@@ -932,16 +932,16 @@ export function DigitalLibraryView() {
                 <p className="text-xs text-slate-500">Mendukung file hingga 200MB.</p>
               </div>
             ) : editFormData.file_url ? (
-              <div className="border-2 border-indigo-400 bg-indigo-50/70 rounded-3xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-xs uppercase shadow-sm">
+              <div className="border-2 border-indigo-400 bg-indigo-50/70 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 bg-indigo-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-xs uppercase shadow-sm shrink-0">
                     {uploadedEditFileInfo?.ext || (editFormData.file_url.split('.').pop().toUpperCase()) || 'FILE'}
                   </div>
-                  <div>
-                    <p className="text-sm font-black text-slate-900 line-clamp-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-black text-slate-900 truncate">
                       {uploadedEditFileInfo?.name || editFormData.title || 'File Bahan Ajar'}
                     </p>
-                    <p className="text-xs text-slate-500 font-bold">
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-bold">
                       Ukuran: {editFormData.file_size || uploadedEditFileInfo?.size || 'Tersedia'} • Siap Disimpan
                     </p>
                   </div>
@@ -949,7 +949,7 @@ export function DigitalLibraryView() {
                 <button
                   type="button"
                   onClick={() => editFileInputRef.current?.click()}
-                  className="px-3.5 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 rounded-xl transition"
+                  className="self-end sm:self-center px-3.5 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 rounded-xl transition shrink-0"
                 >
                   Ganti File
                 </button>
@@ -1020,7 +1020,7 @@ export function DigitalLibraryView() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Tipe Dokumen</label>
               <select
@@ -1051,7 +1051,7 @@ export function DigitalLibraryView() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori Materi</label>
               <input

@@ -624,7 +624,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori Materi</label>
               <select
@@ -689,7 +689,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
               className="hidden"
             />
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 placeholder="https://... atau upload file MP4"
@@ -701,7 +701,7 @@ export function LearningLmsView({ defaultTab = 'learning' }) {
                 type="button"
                 onClick={() => courseVideoRef.current?.click()}
                 disabled={uploadingCourseVideo}
-                className="px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold text-xs flex items-center gap-1.5 transition shrink-0"
+                className="px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition shrink-0"
               >
                 {uploadingCourseVideo ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

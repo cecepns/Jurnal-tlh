@@ -608,7 +608,7 @@ export function SignDictionaryView() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori</label>
               <select
@@ -668,11 +668,11 @@ export function SignDictionaryView() {
                 <p className="text-xs text-slate-500">Mendukung video MP4 hingga 200MB. Mohon tunggu beberapa saat.</p>
               </div>
             ) : (formData.video_url || formData.image_url) ? (
-              <div className="border-2 border-teal-400 bg-teal-50/70 rounded-3xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-teal-800 font-extrabold text-xs">
+              <div className="border-2 border-teal-400 bg-teal-50/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-teal-800 font-extrabold text-xs min-w-0 flex-1">
                     <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
-                    <span>{formData.video_url ? 'Video MP4 Gerakan Siap Disimpan' : 'Foto Gerakan Siap Disimpan'}</span>
+                    <span className="truncate">{formData.video_url ? 'Video MP4 Gerakan Siap Disimpan' : 'Foto Gerakan Siap Disimpan'}</span>
                   </div>
                   <button
                     type="button"
@@ -680,7 +680,7 @@ export function SignDictionaryView() {
                       setFormData(prev => ({ ...prev, image_url: '', video_url: '' }));
                       setUploadedMediaInfo(null);
                     }}
-                    className="px-3 py-1 text-xs font-bold text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-xl transition"
+                    className="px-3 py-1 text-xs font-bold text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-xl transition shrink-0"
                   >
                     Ganti File
                   </button>
@@ -818,7 +818,7 @@ export function SignDictionaryView() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-extrabold text-slate-800 mb-1.5">Kategori</label>
               <select
@@ -878,16 +878,16 @@ export function SignDictionaryView() {
                 <p className="text-xs text-slate-500">Mendukung video MP4 hingga 200MB.</p>
               </div>
             ) : (editFormData.video_url || editFormData.image_url) ? (
-              <div className="border-2 border-teal-400 bg-teal-50/70 rounded-3xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-teal-800 font-extrabold text-xs">
+              <div className="border-2 border-teal-400 bg-teal-50/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-teal-800 font-extrabold text-xs min-w-0 flex-1">
                     <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
-                    <span>{editFormData.video_url ? 'Video MP4 Gerakan Tersedia' : 'Foto Gerakan Tersedia'}</span>
+                    <span className="truncate">{editFormData.video_url ? 'Video MP4 Gerakan Tersedia' : 'Foto Gerakan Tersedia'}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => editMediaInputRef.current?.click()}
-                    className="px-3 py-1 text-xs font-bold text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-xl transition"
+                    className="px-3 py-1 text-xs font-bold text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-xl transition shrink-0"
                   >
                     Ganti Media
                   </button>
