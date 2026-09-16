@@ -383,22 +383,30 @@ app.get('/api/students', async (req, res) => {
     let query = 'SELECT s.*, c.name as class_name FROM students s LEFT JOIN classes c ON s.class_id = c.id WHERE 1=1';
     const params = [];
     if (search) {
-      query += ' AND (s.full_name LIKE ? OR s.nickname LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      query += ' AND (s.full_name LIKE ? OR s.nickname LIKE ? OR s.nisn LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
     if (class_id) {
       query += ' AND s.class_id = ?';
       params.push(parseInt(class_id));
     }
+    query += ' ORDER BY s.id DESC';
+
     const [rows] = await dbPool.query(query, params);
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
+    const total = rows.length;
+    const totalPages = Math.ceil(total / limitNum) || 1;
+    const paginatedRows = rows.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+
     res.json({
       success: true,
-      data: rows,
+      data: paginatedRows,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: rows.length,
-        totalPages: Math.ceil(rows.length / limit) || 1
+        page: pageNum,
+        limit: limitNum,
+        total: total,
+        totalPages: totalPages
       }
     });
   } catch (err) {
@@ -407,31 +415,133 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
+app.get('/api/students/:id', async (req, res) => {
+  const studentId = parseInt(req.params.id);
+  try {
+    const [rows] = await dbPool.query(
+      'SELECT s.*, c.name as class_name FROM students s LEFT JOIN classes c ON s.class_id = c.id WHERE s.id = ?',
+      [studentId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Siswa tidak ditemukan' });
+    }
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('MySQL get student detail error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal mengambil detail siswa' });
+  }
+});
+
 app.post('/api/students', async (req, res) => {
   const studentData = {
     school_id: req.body.school_id || 1,
-    class_id: req.body.class_id || 1,
+    class_id: req.body.class_id ? parseInt(req.body.class_id) : null,
     nisn: req.body.nisn || `00${Date.now().toString().slice(-8)}`,
     full_name: req.body.full_name,
     nickname: req.body.nickname || req.body.full_name.split(' ')[0],
     gender: req.body.gender || 'P',
-    birth_date: req.body.birth_date || '2021-05-10',
-    avatar_url: req.body.avatar_url || null
+    birth_place: req.body.birth_place || null,
+    birth_date: req.body.birth_date || null,
+    avatar_url: req.body.avatar_url || null,
+    notes: req.body.notes || null,
+    status: req.body.status || 'active'
   };
 
   try {
     const [result] = await dbPool.query(
-      'INSERT INTO students (school_id, class_id, nisn, full_name, nickname, gender, birth_date, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [studentData.school_id, studentData.class_id, studentData.nisn, studentData.full_name, studentData.nickname, studentData.gender, studentData.birth_date, studentData.avatar_url]
+      'INSERT INTO students (school_id, class_id, nisn, full_name, nickname, gender, birth_place, birth_date, avatar_url, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [studentData.school_id, studentData.class_id, studentData.nisn, studentData.full_name, studentData.nickname, studentData.gender, studentData.birth_place, studentData.birth_date, studentData.avatar_url, studentData.notes, studentData.status]
     );
+
+    const [createdRows] = await dbPool.query(
+      'SELECT s.*, c.name as class_name FROM students s LEFT JOIN classes c ON s.class_id = c.id WHERE s.id = ?',
+      [result.insertId]
+    );
+
     res.json({
       success: true,
       message: 'Siswa berhasil ditambahkan ke Database',
-      data: { id: result.insertId, ...studentData }
+      data: createdRows[0] || { id: result.insertId, ...studentData }
     });
   } catch (err) {
     console.error('MySQL insert student error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal menambahkan data siswa' });
+  }
+});
+
+app.put('/api/students/:id', async (req, res) => {
+  const studentId = parseInt(req.params.id);
+  const {
+    class_id,
+    nisn,
+    full_name,
+    nickname,
+    gender,
+    birth_place,
+    birth_date,
+    avatar_url,
+    notes,
+    status
+  } = req.body;
+
+  try {
+    await dbPool.query(
+      `UPDATE students SET
+        class_id = ?,
+        nisn = ?,
+        full_name = ?,
+        nickname = ?,
+        gender = ?,
+        birth_place = ?,
+        birth_date = ?,
+        avatar_url = ?,
+        notes = ?,
+        status = ?
+      WHERE id = ?`,
+      [
+        class_id ? parseInt(class_id) : null,
+        nisn || null,
+        full_name,
+        nickname || null,
+        gender || 'P',
+        birth_place || null,
+        birth_date || null,
+        avatar_url || null,
+        notes || null,
+        status || 'active',
+        studentId
+      ]
+    );
+
+    const [rows] = await dbPool.query(
+      'SELECT s.*, c.name as class_name FROM students s LEFT JOIN classes c ON s.class_id = c.id WHERE s.id = ?',
+      [studentId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Siswa tidak ditemukan' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Data siswa berhasil diperbarui di Database',
+      data: rows[0]
+    });
+  } catch (err) {
+    console.error('MySQL update student error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal memperbarui data siswa' });
+  }
+});
+
+app.delete('/api/students/:id', async (req, res) => {
+  const studentId = parseInt(req.params.id);
+
+  try {
+    await dbPool.query('DELETE FROM students WHERE id = ?', [studentId]);
+    res.json({ success: true, message: 'Data siswa berhasil dihapus dari Database' });
+  } catch (err) {
+    console.error('MySQL delete student error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal menghapus data siswa' });
   }
 });
 

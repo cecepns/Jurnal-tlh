@@ -13,6 +13,8 @@ export const API_ENDPOINTS = {
     LIST: "/students",
     CREATE: "/students",
     DETAIL: (id) => `/students/${id}`,
+    UPDATE: (id) => `/students/${id}`,
+    DELETE: (id) => `/students/${id}`,
     TIMELINE: (id) => `/students/${id}/timeline`,
     DEVELOPMENT: (id) => `/students/${id}/development`,
   },
